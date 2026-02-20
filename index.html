@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TARKOV BALLISTICS CALCULATOR</title>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        tarkov: {
+                            black: '#ffffff', // Inverted to white for light mode base
+                            dark: '#f3f4f6', // Light grey
+                            panel: '#ffffff',
+                            border: '#d1d5db', // Light grey border
+                            text: '#4b5563', // Dark grey text
+                            accent: '#854d0e', // Darker Gold/Brown for visibility on light
+                            orange: '#ea580c',
+                            red: '#dc2626',
+                            green: '#15803d'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        tech: ['Share Tech Mono', 'monospace']
+                    },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)"
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;800&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body class="min-h-screen flex flex-col justify-center items-center py-12 px-4 relative overflow-x-hidden">
+
+    <div class="scanlines"></div>
+    <div id="root" class="w-full max-w-6xl z-10"></div>
+
+    <script type="text/babel">
+        // ==========================================
+        // DATA LAYER
+        // ==========================================
+
+        // Initial static data (Fallback)
+        const INITIAL_AMMO_DATA = [
+            // 12/70 Shotgun
+            { id: "1270_ap20", name: "12/70 AP-20 Slug", caliber: "12/70", damage: 164, pen: 37, velocity: 510, armorDamage: 0.65, description: "Armor-piercing slug. Extremely high damage and good penetration for a shotgun. Can one-tap thorax through Class 3/4." },
+            { id: "1270_flechette", name: "12/70 Flechette", caliber: "12/70", damage: 25, pen: 31, velocity: 320, armorDamage: 0.26, description: "Dart-filled shell. Shreds armor durability incredibly fast. Low damage per dart but hits many times." },
+            { id: "1270_superformance", name: "12/70 SuperFormance", caliber: "12/70", damage: 220, pen: 5, velocity: 580, armorDamage: 0.1, description: "Sporting slug with massive flesh damage but zero penetration. Aim for legs." },
+
+            // .300 Blackout
+            { id: "300_ap", name: ".300 Blackout AP", caliber: ".300 Blackout", damage: 51, pen: 48, velocity: 580, armorDamage: 0.63, description: "Armor Piercing round. Excellent performance against Class 4/5 armor. High recoil." },
+            { id: "300_cbj", name: ".300 Blackout CBJ", caliber: ".300 Blackout", damage: 58, pen: 43, velocity: 540, armorDamage: 0.59, description: "Enhanced penetration round. Good all-rounder for the MCX." },
+            { id: "300_m62", name: ".300 Blackout M62 Tracer", caliber: ".300 Blackout", damage: 54, pen: 36, velocity: 650, armorDamage: 0.52, description: "Tracer round. Decent against mid-tier armor." },
+
+            // .366 TKM
+            { id: "366_ap", name: ".366 TKM AP-M", caliber: ".366 TKM", damage: 90, pen: 42, velocity: 610, armorDamage: 0.6, description: "Armor-piercing bolt-action round. Massive damage, can one-tap Class 4 thorax." },
+            { id: "366_eko", name: ".366 TKM EKO", caliber: ".366 TKM", damage: 73, pen: 30, velocity: 770, armorDamage: 0.4, description: "Budget round. Good velocity but poor penetration against high armor." },
+
+            // 4.6x30mm
+            { id: "46_apsx", name: "4.6x30mm AP SX", caliber: "4.6x30mm", damage: 35, pen: 53, velocity: 680, armorDamage: 0.47, description: "Top-tier AP ammo for MP7. Shreds Class 5/6 armor but low flesh damage." },
+            { id: "46_fmjsx", name: "4.6x30mm FMJ SX", caliber: "4.6x30mm", damage: 43, pen: 40, velocity: 620, armorDamage: 0.41, description: "Standard combat load. Effective against Class 4, struggles vs Class 6." },
+
+            // 5.45x39mm
+            { id: "545_ppbs", name: "5.45x39mm PPBS gs \"Igolnik\"", caliber: "5.45x39mm", damage: 37, pen: 62, velocity: 905, armorDamage: 0.6, description: "Experimental tungsten core. Ignores almost all armor. Very low flesh damage." },
+            { id: "545_bs", name: "5.45x39mm BS gs", caliber: "5.45x39mm", damage: 40, pen: 51, velocity: 830, armorDamage: 0.57, description: "Armor-piercing core. Reliable against Class 5 and 6." },
+            { id: "545_bt", name: "5.45x39mm BT gs", caliber: "5.45x39mm", damage: 44, pen: 40, velocity: 875, armorDamage: 0.49, description: "Tracer armor-piercing. Standard mid-late game ammo. Effective vs Class 4." },
+            { id: "545_bp", name: "5.45x39mm BP gs", caliber: "5.45x39mm", damage: 45, pen: 35, velocity: 890, armorDamage: 0.41, description: "Improved penetration. Good budget choice." },
+            { id: "545_ps", name: "5.45x39mm PS gs", caliber: "5.45x39mm", damage: 50, pen: 28, velocity: 895, armorDamage: 0.35, description: "Standard ball round. Ineffective against modern armor." },
+
+            // 5.56x45mm NATO
+            { id: "556_ssa", name: "5.56x45mm SSA AP", caliber: "5.56x45mm", damage: 38, pen: 56, velocity: 960, armorDamage: 0.54, description: "High-velocity AP. Shreds high-tier armor." },
+            { id: "556_m995", name: "5.56x45mm M995", caliber: "5.56x45mm", damage: 42, pen: 53, velocity: 1013, armorDamage: 0.52, description: "Standard AP round for 5.56. Very high penetration." },
+            { id: "556_m855a1", name: "5.56x45mm M855A1", caliber: "5.56x45mm", damage: 49, pen: 44, velocity: 945, armorDamage: 0.52, description: "Enhanced performance round. The meta standard for 5.56." },
+            { id: "556_m856a1", name: "5.56x45mm M856A1", caliber: "5.56x45mm", damage: 54, pen: 38, velocity: 935, armorDamage: 0.46, description: "Tracer round. Decent penetration, good damage." },
+            { id: "556_m855", name: "5.56x45mm M855", caliber: "5.56x45mm", damage: 57, pen: 30, velocity: 922, armorDamage: 0.37, description: "Standard issue. 'Warmage' equivalent (not really). Struggles vs Class 4." },
+
+            // 5.7x28mm
+            { id: "57_ss190", name: "5.7x28mm SS190", caliber: "5.7x28mm", damage: 49, pen: 37, velocity: 710, armorDamage: 0.43, description: "Armor-piercing for P90/Five-Seven. Best in class." },
+            { id: "57_sb193", name: "5.7x28mm SB193", caliber: "5.7x28mm", damage: 54, pen: 35, velocity: 305, armorDamage: 0.37, description: "Subsonic AP. Good pen, low velocity." },
+            { id: "57_l191", name: "5.7x28mm L191", caliber: "5.7x28mm", damage: 58, pen: 33, velocity: 690, armorDamage: 0.35, description: "Tracer practice round. Surprisingly effective." },
+
+            // 7.62x39mm
+            { id: "762_mai", name: "7.62x39mm MAI AP", caliber: "7.62x39mm", damage: 47, pen: 58, velocity: 740, armorDamage: 0.6, description: "Modern AP round. Extremely rare. Devastating." },
+            { id: "762_bp", name: "7.62x39mm BP gzh", caliber: "7.62x39mm", damage: 58, pen: 47, velocity: 730, armorDamage: 0.63, description: "Armor-piercing. The king of 7.62x39. Bi-metal core." },
+            { id: "762_pp", name: "7.62x39mm PP gzh", caliber: "7.62x39mm", damage: 55, pen: 41, velocity: 720, armorDamage: 0.5, description: "Enhanced penetration. Replaced BP as the trader standard." },
+            { id: "762_ps", name: "7.62x39mm PS gzh", caliber: "7.62x39mm", damage: 57, pen: 35, velocity: 700, armorDamage: 0.52, description: "Standard steel core. Good early game, struggles late wipe." },
+
+            // 7.62x51mm NATO
+            { id: "762_m993", name: "7.62x51mm M993", caliber: "7.62x51mm", damage: 67, pen: 70, velocity: 910, armorDamage: 0.66, description: "Tungsten core AP. Ignores all armor in the game." },
+            { id: "762_m61", name: "7.62x51mm M61", caliber: "7.62x51mm", damage: 70, pen: 64, velocity: 849, armorDamage: 0.83, description: "AP round. Two-taps almost anything through Class 6." },
+            { id: "762_m62", name: "7.62x51mm M62 Tracer", caliber: "7.62x51mm", damage: 79, pen: 44, velocity: 816, armorDamage: 0.75, description: "Tracer. High damage and decent penetration." },
+            { id: "762_m80", name: "7.62x51mm M80", caliber: "7.62x51mm", damage: 80, pen: 41, velocity: 833, armorDamage: 0.66, description: "Standard ball. High flesh damage, penetrates Class 4 easily." },
+            { id: "762_bcp", name: "7.62x51mm BCP FMJ", caliber: "7.62x51mm", damage: 83, pen: 30, velocity: 800, armorDamage: 0.55, description: "Hunting round. High damage, low penetration." },
+
+            // 7.62x54mmR
+            { id: "54r_snb", name: "7.62x54mmR SNB gzh", caliber: "7.62x54mmR", damage: 75, pen: 62, velocity: 875, armorDamage: 0.87, description: "Sniper AP. Cuts through Class 6 like butter." },
+            { id: "54r_bt", name: "7.62x54mmR BT gzh", caliber: "7.62x54mmR", damage: 78, pen: 59, velocity: 840, armorDamage: 0.86, description: "Tracer AP. Similar to SNB but with a tracer element." },
+            { id: "54r_ps", name: "7.62x54mmR PS gzh", caliber: "7.62x54mmR", damage: 84, pen: 45, velocity: 860, armorDamage: 0.82, description: "Standard sniper cartridge. One-taps chest through Class 3." },
+            { id: "54r_lps", name: "7.62x54mmR LPS gzh", caliber: "7.62x54mmR", damage: 81, pen: 42, velocity: 865, armorDamage: 0.78, description: "Light steel core. Good budget sniper ammo." },
+
+            // 9x19mm
+            { id: "919_pbp", name: "9x19mm PBP gzh", caliber: "9x19mm", damage: 52, pen: 39, velocity: 560, armorDamage: 0.55, description: "Armor-piercing 9mm. Makes SMGs viable against armor." },
+            { id: "919_ap63", name: "9x19mm AP 6.3", caliber: "9x19mm", damage: 52, pen: 30, velocity: 395, armorDamage: 0.48, description: "Standard AP for 9mm. Effective against face shields." },
+            { id: "919_pst", name: "9x19mm Pst gzh", caliber: "9x19mm", damage: 54, pen: 20, velocity: 457, armorDamage: 0.33, description: "Standard issue. Aim for the face or legs." },
+
+            // 9x39mm
+            { id: "939_bp", name: "9x39mm BP gs", caliber: "9x39mm", damage: 60, pen: 55, velocity: 295, armorDamage: 0.68, description: "Armor-piercing subsonic. Silent and deadly vs Class 5/6." },
+            { id: "939_sp6", name: "9x39mm SP-6 gs", caliber: "9x39mm", damage: 58, pen: 46, velocity: 305, armorDamage: 0.6, description: "Sniper penetrating cartridge. Standard high-tier VSS/VAL ammo." },
+            { id: "939_pab", name: "9x39mm PAB-9 gs", caliber: "9x39mm", damage: 62, pen: 48, velocity: 310, armorDamage: 0.64, description: "Armor-piercing heavy. Slightly better pen than SP-6." },
+            { id: "939_sp5", name: "9x39mm SP-5 gs", caliber: "9x39mm", damage: 68, pen: 38, velocity: 290, armorDamage: 0.52, description: "Sniper cartridge. High damage, moderate penetration." },
+        ];
+
+        const ARMOR_DATA = [
+            // Class 6
+            { id: "zabralo", name: "6B43 Zabralo-Sh", class: 6, maxDurability: 85, destructibility: 0.4, type: "Combined" },
+            { id: "thor_ic", name: "NFM THOR Integrated Carrier", class: 6, maxDurability: 100, destructibility: 0.3, type: "Combined" },
+            { id: "slick", name: "LBT-6094A Slick", class: 6, maxDurability: 80, destructibility: 0.45, type: "Steel" },
+            { id: "hexgrid", name: "5.11 Hexgrid", class: 6, maxDurability: 50, destructibility: 0.45, type: "UHMWPE" },
+            { id: "zhuk6", name: "Zhuk-6a Heavy", class: 6, maxDurability: 75, destructibility: 0.55, type: "Ceramic" },
+
+            // Class 5
+            { id: "gzhel", name: "BNTI Gzhel-K", class: 5, maxDurability: 65, destructibility: 0.7, type: "Ceramic" },
+            { id: "korund", name: "Korund-VM", class: 5, maxDurability: 45, destructibility: 0.8, type: "Steel" },
+            { id: "gen4_full", name: "IOTV Gen4 (Full)", class: 5, maxDurability: 95, destructibility: 0.55, type: "Titan" },
+            { id: "cpc", name: "Crye Precision CPC", class: 5, maxDurability: 70, destructibility: 0.50, type: "Combined" },
+            { id: "defender", name: "Fort Defender-2", class: 5, maxDurability: 70, destructibility: 0.55, type: "Steel" },
+
+            // Class 4
+            { id: "trooper", name: "Highcom Trooper TFO", class: 4, maxDurability: 85, destructibility: 0.45, type: "UHMWPE" },
+            { id: "tv110", name: "Wartech TV-110", class: 4, maxDurability: 85, destructibility: 0.45, type: "Steel" },
+            { id: "6b13", name: "6B13 Assault Armor", class: 4, maxDurability: 47, destructibility: 0.7, type: "Ceramic" },
+            { id: "avs", name: "Crye Precision AVS", class: 4, maxDurability: 70, destructibility: 0.50, type: "Titan" },
+
+            // Class 3
+            { id: "kirasa", name: "Kirasa-N", class: 3, maxDurability: 70, destructibility: 0.55, type: "Combined" },
+
+            // Class 2
+            { id: "paca", name: "PACA Soft Armor", class: 2, maxDurability: 50, destructibility: 0.35, type: "Aramid" }
+        ];
+
+        const HELMET_DATA = [
+            // Class 6
+            { id: "killa_mask", name: "Maska-1Sch (Killa)", class: 6, maxDurability: 60, destructibility: 0.4, type: "Steel" },
+            { id: "vulkan", name: "Vulkan-5 (LShZ-5)", class: 6, maxDurability: 99, destructibility: 0.35, type: "Titan" },
+            { id: "tagilla_mask", name: "Tagilla Welding Mask", class: 6, maxDurability: 100, destructibility: 0.4, type: "Steel" },
+
+            // Class 5
+            { id: "altyn", name: "Altyn", class: 5, maxDurability: 45, destructibility: 0.5, type: "Titan" },
+            { id: "rys_t", name: "Rys-T", class: 5, maxDurability: 50, destructibility: 0.45, type: "Titan" },
+            { id: "maska", name: "Maska-1Sch", class: 5, maxDurability: 60, destructibility: 0.5, type: "Steel" },
+
+            // Class 4
+            { id: "ulach", name: "Highcom Striker ULACH", class: 4, maxDurability: 38, destructibility: 0.45, type: "UHMWPE" },
+            { id: "bastion", name: "Diamond Age Bastion", class: 4, maxDurability: 45, destructibility: 0.4, type: "Combined" },
+            { id: "fast_mt", name: "Ops-Core FAST MT", class: 4, maxDurability: 40, destructibility: 0.55, type: "Combined" },
+            { id: "exfil", name: "Team Wendy EXFIL", class: 4, maxDurability: 45, destructibility: 0.5, type: "Combined" },
+
+            // Class 3
+            { id: "ratnik", name: "6B47 Ratnik", class: 3, maxDurability: 25, destructibility: 0.45, type: "Alu" },
+            { id: "ssh68", name: "SSh-68", class: 3, maxDurability: 30, destructibility: 0.5, type: "Steel" },
+        ];
+
+        const FACE_SHIELD_DATA = [
+            // Class 6 -> 5/4/2 Corrections as requested
+            { id: "bastion_plate", name: "Bastion Additional Armor", class: 6, maxDurability: 40, destructibility: 0.45, type: "Ceramic" }, // This is actually a plate on top, technically class 6
+
+            // Class 5
+            { id: "altyn_fs", name: "Altyn Face Shield", class: 5, maxDurability: 50, destructibility: 0.45, type: "Glass" }, // Altyn Visor is Class 5 in game (Source: Wiki/Tarkov.dev)
+
+            // Class 4
+            { id: "vulkan_fs", name: "Vulkan-5 Face Shield", class: 4, maxDurability: 55, destructibility: 0.45, type: "Glass" },
+            { id: "rys_fs", name: "Rys-T Face Shield", class: 4, maxDurability: 50, destructibility: 0.45, type: "Glass" }, // Rys is Class 4 in reality? Actually in game usually 5? Let's check... wait user said "I dont think there is a lvl 6 face shield". 
+            // Checking: Altyn Face Shield is Class 5. Rys-T Face Shield is Class 5. Maska Face Shield is Class 4 (Killa is 6).
+            // User claimed Vulkan is close to 6. Vulkan FS is Class 4. The helmet is 6.
+
+            // Class 3
+            { id: "exfil_fs", name: "EXFIL Face Shield", class: 3, maxDurability: 40, destructibility: 0.45, type: "Glass" },
+            { id: "fast_fs", name: "Fast MT Face Shield", class: 3, maxDurability: 40, destructibility: 0.45, type: "Glass" },
+
+            // Class 2
+            { id: "obsidian", name: "Death Shadow Mask", class: 2, maxDurability: 40, destructibility: 0.5, type: "Combined" }, // User corrected to 2
+            { id: "multi_hit", name: "Multi-hit Ballistic Face Shield", class: 3, maxDurability: 50, destructibility: 0.45, type: "Glass" },
+        ];
+
+        // ==========================================
+        // LOGIC LAYER
+        // ==========================================
+
+        function calculatePenetrationChance(penValue, armorClass, currentDurability, maxDurability) {
+            if (currentDurability <= 0) return 100;
+            if (armorClass === 0) return 100;
+
+            const durabilityPercent = (currentDurability / maxDurability) * 100;
+            const threshold = (armorClass * 10) - 3;
+            const durabilityFactor = durabilityPercent / 100;
+            const effectiveThreshold = threshold * (0.6 + 0.4 * durabilityFactor);
+
+            const delta = penValue - effectiveThreshold;
+
+            if (delta >= 10) return 100;
+            if (delta <= -15) return 0;
+
+            const chance = ((delta + 15) / 25) * 100;
+            return Math.min(Math.max(chance, 0), 100);
+        }
+
+        function simulateShotsToKill(ammo, armor) {
+            let currentDurability = armor.maxDurability;
+            let thoraxHP = 85;
+            let headHP = 35;
+            let targetHP = armor.type.includes("Helmet") || armor.type.includes("Glass") ? headHP : thoraxHP;
+
+            let shots = 0;
+            const maxShots = 50;
+
+            while (targetHP > 0 && shots < maxShots) {
+                shots++;
+                const penChance = calculatePenetrationChance(ammo.pen, armor.class, currentDurability, armor.maxDurability);
+                const roll = 50; // Deterministic "Average" roll
+
+                if (penChance >= roll || penChance >= 100) {
+                    const reduction = Math.max(0, (armor.class * 10) - ammo.pen);
+                    const damageDealt = Math.max(ammo.damage * 0.8, ammo.damage - reduction);
+                    targetHP -= damageDealt;
+
+                    const armorDmg = ammo.armorDamage * armor.destructibility * 0.5;
+                    currentDurability -= armorDmg;
+                } else {
+                    const bluntDamage = 2; // Fixed small amount
+                    targetHP -= bluntDamage;
+                    const armorDmg = ammo.armorDamage * armor.destructibility * Math.min(ammo.damage, 100) * 0.4;
+                    currentDurability -= armorDmg;
+                }
+                if (currentDurability < 0) currentDurability = 0;
+            }
+            return shots >= maxShots ? "50+" : shots;
+        }
+
+        function getRating(chance) {
+            if (chance >= 90) return { text: "Catastrophic Failure", color: "text-tarkov-red", tier: "S" };
+            if (chance >= 70) return { text: "High Penetration", color: "text-tarkov-orange", tier: "A" };
+            if (chance >= 40) return { text: "Coin Flip", color: "text-yellow-500", tier: "B" };
+            if (chance >= 10) return { text: "Struggles", color: "text-yellow-700", tier: "C" };
+            return { text: "Did Not Penetrate", color: "text-tarkov-green", tier: "F" };
+        }
+
+        // ==========================================
+        // UI COMPONENTS
+        // ==========================================
+
+        const { useState, useMemo, useEffect } = React;
+
+        // Helper to clean up API caliber names
+        const normalizeCaliber = (rawCaliber) => {
+            if (!rawCaliber) return "Unknown";
+            const map = {
+                "Caliber556x45NATO": "5.56x45mm NATO",
+                "Caliber762x39": "7.62x39mm",
+                "Caliber545x39": "5.45x39mm",
+                "Caliber9x19PARA": "9x19mm Parabellum",
+                "Caliber762x51": "7.62x51mm NATO",
+                "Caliber762x54R": "7.62x54mmR",
+                "Caliber46x30": "4.6x30mm HK",
+                "Caliber57x28": "5.7x28mm FN",
+                "Caliber366TKM": ".366 TKM",
+                "Caliber9x39": "9x39mm",
+                "Caliber12g": "12/70 Gauge",
+                "Caliber300Blackout": ".300 Blackout",
+                "Caliber1143x23ACP": ".45 ACP",
+                "Caliber9x18PM": "9x18mm PM",
+                "Caliber9x21": "9x21mm Gyurza",
+                "Caliber86x70": ".338 Lapua Magnum",
+                "Caliber127x55": "12.7x55mm PS12",
+                "Caliber68x51": "6.8x51mm"
+            };
+            return map[rawCaliber.replace("Caliber", "")] || map[rawCaliber] || rawCaliber.replace("Caliber", "");
+        };
+
+        function App() {
+            const [ammoData, setAmmoData] = useState(INITIAL_AMMO_DATA);
+            const [loading, setLoading] = useState(true);
+            const [selectedAmmo, setSelectedAmmo] = useState(INITIAL_AMMO_DATA.find(a => a.id === "545_bs") || INITIAL_AMMO_DATA[0]);
+
+            // Fetch Data from Tarkov.dev
+            useEffect(() => {
+                const query = `
+                {
+                    items(categoryNames: "Ammo") {
+                        id
+                        name
+                        shortName
+                        description
+                        properties {
+                            ... on ItemPropertiesAmmo {
+                                caliber
+                                damage
+                                penetrationPower
+                                armorDamage
+                                initialSpeed
+                            }
+                        }
+                    }
+                }`;
+
+                fetch('https://api.tarkov.dev/graphql', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ query })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        const validItems = data.data.items.filter(item => item.properties && item.properties.damage > 0);
+                        const formatted = validItems.map(item => ({
+                            id: item.id,
+                            name: item.name,
+                            caliber: normalizeCaliber(item.properties.caliber),
+                            damage: item.properties.damage,
+                            pen: item.properties.penetrationPower,
+                            velocity: item.properties.initialSpeed,
+                            armorDamage: item.properties.armorDamage,
+                            description: item.description || "No description available."
+                        })).sort((a, b) => a.caliber.localeCompare(b.caliber) || a.pen - b.pen);
+
+                        if (formatted.length > 0) {
+                            setAmmoData(formatted);
+                            // Try to preserve selection if it matches by name, otherwise default
+                            setSelectedAmmo(prev => formatted.find(f => f.name === prev.name) || formatted.find(f => f.name.includes("BS")) || formatted[0]);
+                        }
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("API Error:", err);
+                        setLoading(false); // Fallback to initial data
+                    });
+            }, []);
+
+            const [armorMode, setArmorMode] = useState("Armor");
+            const [selectedArmor, setSelectedArmor] = useState(ARMOR_DATA[0]);
+            const [durability, setDurability] = useState(100);
+
+            useEffect(() => {
+                setDurability(selectedArmor.maxDurability);
+            }, [selectedArmor]);
+
+            let currentList = ARMOR_DATA;
+            if (armorMode === "Helmet") currentList = HELMET_DATA;
+            if (armorMode === "Face") currentList = FACE_SHIELD_DATA;
+
+            const penChance = calculatePenetrationChance(selectedAmmo.pen, selectedArmor.class, durability, selectedArmor.maxDurability);
+            const rating = getRating(penChance);
+            const estimatedShots = useMemo(() => simulateShotsToKill(selectedAmmo, selectedArmor), [selectedAmmo, selectedArmor]);
+            const predictedDamage = penChance > 80 ? selectedAmmo.damage : "Blunt";
+
+            // Filter logic for ammo selector
+            const [searchText, setSearchText] = useState("");
+
+            return (
+                <div className="w-full">
+                    <header className="glass-panel w-full p-4 mb-8 flex justify-between items-center tech-border rounded-sm">
+                        <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 bg-tarkov-accent rotate-45 border-2 border-gray-900/50 opacity-80"></div>
+                            <div>
+                                <h1 className="text-2xl font-tech font-bold tracking-widest text-gray-800">TARKOV<span className="text-tarkov-accent">_BALLISTICS</span></h1>
+                                <p className="text-xs text-tarkov-text tracking-[0.3em] font-mono">
+                                    {loading ? <span className="animate-pulse text-yellow-600">CONNECTING TO SATELLITE...</span> : "LIVE FEED // ONLINE"}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="hidden md:flex gap-8 text-xs font-mono text-tarkov-text">
+                            <div>SYS.STATUS: <span className="text-tarkov-green">ONLINE</span></div>
+                            <div>SEC.LEVEL: <span className="text-tarkov-accent">MAX</span></div>
+                            <div>VER: 2.5.0</div>
+                        </div>
+                    </header>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                        <div className="lg:col-span-4 flex flex-col gap-6 relative z-30">
+                            <SectionPanel title="OFFENSE PARAMETERS">
+                                <label className="text-xs font-bold text-tarkov-text uppercase mb-2 block">Select Ammunition {loading && "(Updating...)"}</label>
+                                <AmmoSelect
+                                    ammoList={ammoData}
+                                    selected={selectedAmmo}
+                                    onSelect={setSelectedAmmo}
+                                />
+
+                                <div className="mt-4 p-3 bg-white/50 border border-tarkov-border rounded text-xs text-gray-600 italic">
+                                    "{selectedAmmo.description}"
+                                </div>
+
+                                <div className="mt-6 grid grid-cols-2 gap-4">
+                                    <DataCard label="PEN VALUE" value={selectedAmmo.pen} highlight />
+                                    <DataCard label="FLESH DMG" value={selectedAmmo.damage} />
+                                    <DataCard label="VELOCITY" value={`${selectedAmmo.velocity} m/s`} />
+                                    <DataCard label="ARMOR DMG" value={`${(selectedAmmo.armorDamage * 100).toFixed(0)}%`} />
+                                </div>
+                            </SectionPanel>
+
+                            <div className="h-full min-h-[100px] glass-panel p-4 flex items-center justify-center opacity-50 relative overflow-hidden">
+                                <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 opacity-20">
+                                    {[...Array(36)].map((_, i) => <div key={i} className="border border-tarkov-border"></div>)}
+                                </div>
+                                <div className="font-tech text-6xl text-tarkov-border font-bold opacity-30">BSG</div>
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-4 flex flex-col justify-center">
+                            <div className="glass-panel p-8 text-center relative tech-border rounded min-h-[400px] flex flex-col justify-center items-center">
+                                <div className="absolute inset-0 pointer-events-none opacity-20 flex items-center justify-center">
+                                    <svg viewBox="0 0 100 100" className="w-[80%] h-[80%] stroke-tarkov-accent fill-none" strokeWidth="0.5">
+                                        <circle cx="50" cy="50" r="45" strokeDasharray="5 5" />
+                                        <line x1="50" y1="0" x2="50" y2="100" />
+                                        <line x1="0" y1="50" x2="100" y2="50" />
+                                        <rect x="45" y="45" width="10" height="10" />
+                                    </svg>
+                                </div>
+
+                                <div className="relative z-10 w-full">
+                                    <div className="text-tarkov-accent text-sm font-tech tracking-widest mb-4 animate-pulse">CALCULATING PENETRATION PROBABILITY...</div>
+                                    <div className={`text-7xl font-tech font-black mb-2 ${getGradientColor(penChance)} drop-shadow-sm`}>
+                                        {penChance.toFixed(0)}<span className="text-3xl">%</span>
+                                    </div>
+                                    <div className={`inline-block px-4 py-1 border ${getBorderColor(penChance)} ${getTextColor(penChance)} font-bold tracking-widest uppercase bg-white/50 backdrop-blur`}>
+                                        {rating.text}
+                                    </div>
+
+                                    <div className="mt-12 grid grid-cols-2 gap-4 w-full">
+                                        <div className="border border-tarkov-border bg-white/50 p-2">
+                                            <div className="text-[10px] text-gray-500 uppercase">Est. First Hit Dmg</div>
+                                            <div className="text-xl font-mono text-gray-800">{predictedDamage}</div>
+                                        </div>
+                                        <div className="border border-tarkov-border bg-white/50 p-2 relative overflow-hidden">
+                                            {estimatedShots === "50+" && <div className="absolute inset-0 bg-red-900/10 animate-pulse"></div>}
+                                            <div className="text-[10px] text-gray-500 uppercase relative z-10">Shots to Kill (Est.)</div>
+                                            <div className="text-xl font-mono text-gray-800 relative z-10">{estimatedShots}</div>
+                                        </div>
+                                    </div>
+
+                                    {estimatedShots > 1 && estimatedShots < 50 && (
+                                        <div className="mt-2 text-[10px] text-tarkov-orange font-mono">
+                                            "Target armor will degrade by {Math.min(100, (1 / estimatedShots) * 300).toFixed(0)}% after first few hits."
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-4 flex flex-col gap-6">
+                            <SectionPanel title="DEFENSE PARAMETERS">
+                                <div className="flex flex-col gap-2 mb-4">
+                                    <label className="text-xs font-bold text-tarkov-text uppercase">Target Gear</label>
+                                    <div className="flex bg-white/50 rounded p-1 border border-tarkov-border">
+                                        <TabButton active={armorMode === "Armor"} onClick={() => { setArmorMode("Armor"); setSelectedArmor(ARMOR_DATA[0]); }}>VEST</TabButton>
+                                        <TabButton active={armorMode === "Helmet"} onClick={() => { setArmorMode("Helmet"); setSelectedArmor(HELMET_DATA[0]); }}>HELMET</TabButton>
+                                        <TabButton active={armorMode === "Face"} onClick={() => { setArmorMode("Face"); setSelectedArmor(FACE_SHIELD_DATA[0]); }}>FACE</TabButton>
+                                    </div>
+                                </div>
+
+                                <ArmorSelect
+                                    list={currentList}
+                                    selected={selectedArmor}
+                                    onSelect={setSelectedArmor}
+                                />
+
+                                <div className="mt-6">
+                                    <div className="flex justify-between text-xs text-tarkov-accent font-mono mb-1">
+                                        <span>DURABILITY: {durability.toFixed(1)} / {selectedArmor.maxDurability}</span>
+                                        <span>CLASS {selectedArmor.class}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max={selectedArmor.maxDurability}
+                                        value={durability}
+                                        onChange={(e) => setDurability(parseInt(e.target.value))}
+                                        className="w-full h-1 bg-tarkov-border rounded-lg appearance-none cursor-pointer accent-tarkov-accent hover:accent-gray-800"
+                                    />
+                                </div>
+                            </SectionPanel>
+
+                            <div className="glass-panel p-4 flex flex-col gap-2 font-mono text-xs text-gray-500">
+                                <div className="flex justify-between border-b border-tarkov-border pb-1">
+                                    <span>MATERIAL</span>
+                                    <span className="text-gray-900">{selectedArmor.type}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-tarkov-border pb-1">
+                                    <span>DESTRUCTIBILITY</span>
+                                    <span className="text-gray-900">{selectedArmor.destructibility}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-tarkov-border pb-1">
+                                    <span>TOTAL HIT POINTS</span>
+                                    <span className="text-tarkov-accent">{selectedArmor.maxDurability} HP</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <footer className="mt-12 text-center border-t border-tarkov-border pt-6 opacity-60 hover:opacity-100 transition-opacity">
+                        <p className="text-xs font-mono text-tarkov-text">
+                            TACTICAL DATABASE V2.4 // DEVELOPED BY <span className="text-tarkov-accent font-bold">BEKKA PRAMHEDDA AND CHANGELINGS</span>
+                        </p>
+                    </footer>
+                </div>
+            );
+        }
+
+        // --- Subcomponents ---
+
+        function SectionPanel({ title, children }) {
+            return (
+                <div className="glass-panel p-5 rounded relative group z-10 hover:z-20 transition-all">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-tarkov-accent to-transparent opacity-50"></div>
+                    <h2 className="text-sm font-tech font-bold text-tarkov-accent mb-6 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-tarkov-accent rounded-full animate-pulse"></span>
+                        {title}
+                    </h2>
+                    {children}
+                </div>
+            );
+        }
+
+        function DataCard({ label, value, highlight }) {
+            return (
+                <div className={`p-3 border-l-2 ${highlight ? 'border-tarkov-accent bg-gradient-to-r from-tarkov-accent/10 to-transparent' : 'border-tarkov-border bg-white/50'}`}>
+                    <div className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</div>
+                    <div className={`font-mono text-lg font-bold ${highlight ? 'text-tarkov-accent' : 'text-gray-800'}`}>{value}</div>
+                </div>
+            );
+        }
+
+        function TabButton({ children, active, onClick }) {
+            return (
+                <button
+                    className={`flex-1 px-2 py-1 text-[10px] font-bold rounded transition-all ${active ? "bg-white shadow text-gray-900" : "text-gray-500 hover:text-gray-900"}`}
+                    onClick={onClick}
+                >{children}</button>
+            );
+        }
+
+        function AmmoSelect({ ammoList, selected, onSelect }) {
+            const [search, setSearch] = useState("");
+            const [isOpen, setIsOpen] = useState(false);
+
+            const filtered = useMemo(() => {
+                return ammoList.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) || a.caliber.toLowerCase().includes(search.toLowerCase()));
+            }, [search, ammoList]);
+
+            return (
+                <div className="relative">
+                    <div
+                        className="bg-white/50 border border-tarkov-border p-3 cursor-pointer hover:border-tarkov-accent transition-colors flex justify-between items-center group"
+                        onClick={() => setIsOpen(!isOpen)}
+                    >
+                        <span className="font-mono text-sm truncate text-gray-800 group-hover:text-black transition-colors">{selected.name}</span>
+                        <span className="text-xs text-tarkov-accent">▼</span>
+                    </div>
+
+                    {isOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-tarkov-accent/50 backdrop-blur-xl shadow-2xl z-50 max-h-80 flex flex-col">
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="SEARCH ORDANCE..."
+                                className="w-full bg-transparent p-3 text-sm text-tarkov-accent placeholder-gray-500 border-b border-tarkov-border focus:outline-none font-mono uppercase"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                            <div className="overflow-y-auto flex-1 custom-scrollbar">
+                                {filtered.map(ammo => (
+                                    <div
+                                        key={ammo.id}
+                                        className={`p-2 pl-4 cursor-pointer text-xs font-mono border-l-2 hover:bg-gray-100 transition-colors ${ammo.id === selected.id ? "border-tarkov-accent bg-gray-100 text-gray-900" : "border-transparent text-gray-500"}`}
+                                        onClick={() => {
+                                            onSelect(ammo);
+                                            setIsOpen(false);
+                                            setSearch("");
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center pr-2">
+                                            <span>{ammo.name}</span>
+                                            <span className="text-tarkov-accent/90">{ammo.pen} PEN</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function ArmorSelect({ list, selected, onSelect }) {
+            return (
+                <div className="grid grid-cols-1 gap-1 max-h-64 overflow-y-auto pr-2 custom-scrollbar border-t border-b border-tarkov-border/30 py-2">
+                    {list.map(item => (
+                        <button
+                            key={item.id}
+                            className={`p-2 text-left transition-all text-xs font-mono flex justify-between items-center group relative hover:pl-3 ${selected.id === item.id ? "text-gray-900 bg-black/5" : "text-gray-500 hover:text-gray-900"}`}
+                            onClick={() => onSelect(item)}
+                        >
+                            {selected.id === item.id && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-tarkov-accent"></div>}
+                            <span className="truncate pr-2">{item.name}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 border ${getClassBorder(item.class)} text-gray-500`}>LVL {item.class}</span>
+                        </button>
+                    ))}
+                </div>
+            );
+        }
+
+        // --- Helpers ---
+        function getGradientColor(chance) {
+            if (chance > 80) return "text-red-600 drop-shadow-sm";
+            if (chance > 40) return "text-yellow-600 drop-shadow-sm";
+            return "text-green-600 drop-shadow-sm";
+        }
+        function getTextColor(chance) {
+            if (chance > 80) return "text-red-600";
+            if (chance > 40) return "text-yellow-600";
+            return "text-green-600";
+        }
+        function getBorderColor(chance) {
+            if (chance > 80) return "border-red-600";
+            if (chance > 40) return "border-yellow-600";
+            return "border-green-600";
+        }
+
+        function getClassBorder(lvl) {
+            if (lvl === 6) return "border-red-500/50";
+            if (lvl === 5) return "border-orange-500/50";
+            if (lvl === 4) return "border-yellow-400/50";
+            return "border-gray-400";
+        }
+
+        // Render
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+    </script>
+</body>
+
+</html>
