@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -127,7 +127,7 @@
 <body class="min-h-screen flex flex-col justify-center items-center py-12 px-4 relative overflow-x-hidden">
 
     <div class="scanlines"></div>
-    <div id="root" class="w-full max-w-6xl z-10"></div>
+    <div id="root" class="w-full max-w-[1440px] z-10"></div>
 
     <script type="text/babel">
         // ==========================================
@@ -302,32 +302,59 @@
             let currentDurability = armor.maxDurability;
             let thoraxHP = 85;
             let headHP = 35;
-            let targetHP = armor.type.includes("Helmet") || armor.type.includes("Glass") ? headHP : thoraxHP;
+
+            let isHead = false;
+            if (armor.type) {
+                isHead = armor.type.includes("Helmet") || armor.type.includes("Glass");
+            } else if (armor.name) {
+                const ln = armor.name.toLowerCase();
+                isHead = ln.includes("helmet") || ln.includes("beanie") || ln.includes("mask");
+            }
+
+            let targetHP = isHead ? headHP : thoraxHP;
 
             let shots = 0;
-            const maxShots = 50;
+            const maxShots = 150; // High cap for pure flesh rounds hitting plates
 
             while (targetHP > 0 && shots < maxShots) {
                 shots++;
                 const penChance = calculatePenetrationChance(ammo.pen, armor.class, currentDurability, armor.maxDurability);
-                const roll = 50; // Deterministic "Average" roll
+                const roll = 50;
+
+                // Real Tarkov Armor Damage: Base Damage * (Armor Damage % / 100) * Destructibility factor
+                let baseArmorDmg = ammo.damage * (ammo.armorDamage / 100) * (armor.destructibility || 0.45);
 
                 if (penChance >= roll || penChance >= 100) {
-                    const reduction = Math.max(0, (armor.class * 10) - ammo.pen);
-                    const damageDealt = Math.max(ammo.damage * 0.8, ammo.damage - reduction);
-                    targetHP -= damageDealt;
+                    // Penetrated!
+                    currentDurability -= Math.max(1, baseArmorDmg * Math.min(1.0, ammo.pen / (armor.class * 10)));
 
-                    const armorDmg = ammo.armorDamage * armor.destructibility * 0.5;
-                    currentDurability -= armorDmg;
+                    // Mitigation applies if it barely penetrates
+                    let damageMitigation = 1.0;
+                    const effectiveArmorTarget = armor.class * 10;
+
+                    if (ammo.pen <= effectiveArmorTarget + 10) {
+                        const diff = effectiveArmorTarget + 10 - ammo.pen;
+                        damageMitigation = 1.0 - (diff * 0.02); // Loose up to 20% max damage
+                    }
+
+                    damageMitigation = Math.max(0.6, Math.min(1.0, damageMitigation));
+                    targetHP -= (ammo.damage * damageMitigation);
                 } else {
-                    const bluntDamage = 2; // Fixed small amount
-                    targetHP -= bluntDamage;
-                    const armorDmg = ammo.armorDamage * armor.destructibility * Math.min(ammo.damage, 100) * 0.4;
-                    currentDurability -= armorDmg;
+                    // Blocked!
+                    const penRatio = ammo.pen / (armor.class * 10);
+
+                    let bluntMitigation = Math.pow(penRatio, 2);
+                    if (bluntMitigation < 0.05) bluntMitigation = 0.05; // min 5% blunt
+                    if (bluntMitigation > 0.40) bluntMitigation = 0.40; // cap blunt 40%
+
+                    targetHP -= (ammo.damage * bluntMitigation);
+
+                    // Armor takes scaled damage on blocks
+                    currentDurability -= (baseArmorDmg * Math.min(1.0, penRatio));
                 }
                 if (currentDurability < 0) currentDurability = 0;
             }
-            return shots >= maxShots ? "50+" : shots;
+            return shots >= maxShots ? "150+" : shots;
         }
 
         function getRating(chance) {
@@ -375,15 +402,23 @@
             const [loading, setLoading] = useState(true);
             const [selectedAmmo, setSelectedAmmo] = useState(INITIAL_AMMO_DATA.find(a => a.id === "545_bs") || INITIAL_AMMO_DATA[0]);
 
+            // Defense State
+            const [armorData, setArmorData] = useState([{"id":"6B2_body_armor__Flora_","name":"6B2 body armor (Flora)","class":2,"maxDurability":128,"material":"Titan"},{"id":"BNTI_Module_3M_body_armor","name":"BNTI Module-3M body armor","class":2,"maxDurability":80,"material":"Aramid"},{"id":"PACA_Soft_Armor","name":"PACA Soft Armor","class":2,"maxDurability":100,"material":"Aramid"},{"id":"PACA_Soft_Armor__Rivals_Edition_","name":"PACA Soft Armor (Rivals Edition)","class":2,"maxDurability":100,"material":"Aramid"},{"id":"Interceptor_OTV_body_armor__UCP_","name":"Interceptor OTV body armor (UCP)","class":4,"maxDurability":132,"material":"Aramid"},{"id":"Interceptor_OTV_body_armor__Woodland_","name":"Interceptor OTV body armor (Woodland)","class":4,"maxDurability":132,"material":"Aramid"},{"id":"BNTI_Zhuk_body_armor__Press_","name":"BNTI Zhuk body armor (Press)","class":3,"maxDurability":110,"material":"Aramid"},{"id":"BNTI_Kirasa_N_body_armor","name":"BNTI Kirasa-N body armor","class":3,"maxDurability":150,"material":"Aramid"},{"id":"BNTI_Kirasa_N_body_armor__Green_","name":"BNTI Kirasa-N body armor (Green)","class":3,"maxDurability":150,"material":"Aramid"},{"id":"6B13_assault_armor__Flora_","name":"6B13 assault armor (Flora)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"6B13_assault_armor__EMR_","name":"6B13 assault armor (EMR)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"6B23_1_body_armor__EMR_","name":"6B23-1 body armor (EMR)","class":3,"maxDurability":156,"material":"Aramid"},{"id":"6B23_2_body_armor__Mountain_Flora_","name":"6B23-2 body armor (Mountain Flora)","class":4,"maxDurability":156,"material":"Aramid"},{"id":"NPP_KlASS_Korund_VM_body_armor__Black_","name":"NPP KlASS Korund-VM body armor (Black)","class":5,"maxDurability":160,"material":"Aramid"},{"id":"NPP_KlASS_Korund_VM_body_armor__Kamysh_","name":"NPP KlASS Korund-VM body armor (Kamysh)","class":5,"maxDurability":160,"material":"Aramid"},{"id":"LBT_6094A_Slick_Plate_Carrier__Black_","name":"LBT-6094A Slick Plate Carrier (Black)","class":6,"maxDurability":100,"material":"Aramid"},{"id":"LBT_6094A_Slick_Plate_Carrier__Olive_Drab_","name":"LBT-6094A Slick Plate Carrier (Olive Drab)","class":6,"maxDurability":100,"material":"Aramid"},{"id":"LBT_6094A_Slick_Plate_Carrier__Coyote_Tan_","name":"LBT-6094A Slick Plate Carrier (Coyote Tan)","class":6,"maxDurability":100,"material":"Aramid"},{"id":"HighCom_Trooper_TFO_body_armor__MultiCam_","name":"HighCom Trooper TFO body armor (MultiCam)","class":4,"maxDurability":100,"material":"Aramid"},{"id":"HighCom_Trooper_TFO_body_armor__Coyote_","name":"HighCom Trooper TFO body armor (Coyote)","class":4,"maxDurability":100,"material":"Aramid"},{"id":"NPP_KlASS_Kora_Kulon_body_armor__Black_","name":"NPP KlASS Kora-Kulon body armor (Black)","class":3,"maxDurability":128,"material":"Armor steel"},{"id":"NPP_KlASS_Kora_Kulon_body_armor__EMR_","name":"NPP KlASS Kora-Kulon body armor (EMR)","class":3,"maxDurability":128,"material":"Armor steel"},{"id":"NFM_THOR_Concealable_Reinforced_Vest_body_armor","name":"NFM THOR Concealable Reinforced Vest body armor","class":4,"maxDurability":70,"material":"Aramid"},{"id":"NFM_THOR_Concealable_Reinforced_Vest_body_armor__Head_Eyes_","name":"NFM THOR Concealable Reinforced Vest body armor (Head Eyes)","class":4,"maxDurability":70,"material":"Aramid"},{"id":"MF_UNTAR_body_armor","name":"MF-UNTAR body armor","class":3,"maxDurability":100,"material":"Aluminium"},{"id":"DRD_body_armor","name":"DRD body armor","class":3,"maxDurability":120,"material":"Aramid"},{"id":"BNTI_Gzhel_K_body_armor","name":"BNTI Gzhel-K body armor","class":5,"maxDurability":154,"material":"Aramid"},{"id":"BNTI_Zhuk_body_armor__EMR_","name":"BNTI Zhuk body armor (EMR)","class":6,"maxDurability":165,"material":"Aramid"},{"id":"FORT_Defender_2_body_armor","name":"FORT Defender-2 body armor","class":5,"maxDurability":210,"material":"Aramid"},{"id":"6B45_body_armor__EMR_","name":"6B45 body armor (EMR)","class":5,"maxDurability":254,"material":"Aramid"},{"id":"6B13_M_assault_armor__Killa_Edition_","name":"6B13 M assault armor (Killa Edition)","class":5,"maxDurability":154,"material":"Aramid"},{"id":"IOTV_Gen4_body_armor__Assault_Kit__MultiCam_","name":"IOTV Gen4 body armor (Assault Kit, MultiCam)","class":5,"maxDurability":212,"material":"Aramid"},{"id":"IOTV_Gen4_body_armor__High_Mobility_Kit__MultiCam_","name":"IOTV Gen4 body armor (High Mobility Kit, MultiCam)","class":5,"maxDurability":200,"material":"Aramid"},{"id":"FORT_Redut_M_body_armor","name":"FORT Redut-M body armor","class":5,"maxDurability":248,"material":"Aramid"},{"id":"FORT_Redut_M_body_armor__SK_Woodland_","name":"FORT Redut-M body armor (SK Woodland)","class":5,"maxDurability":248,"material":"Aramid"},{"id":"NFM_THOR_Integrated_Carrier_body_armor","name":"NFM THOR Integrated Carrier body armor","class":6,"maxDurability":310,"material":"Aramid"},{"id":"6B43_Zabralo_Sh_body_armor__EMR_","name":"6B43 Zabralo-Sh body armor (EMR)","class":6,"maxDurability":350,"material":"Aramid"},{"id":"IOTV_Gen4_body_armor__Full_Protection_Kit__MultiCam_","name":"IOTV Gen4 body armor (Full Protection Kit, MultiCam)","class":5,"maxDurability":248,"material":"Aramid"},{"id":"FORT_Redut_T5_body_armor__Smog_","name":"FORT Redut-T5 body armor (Smog)","class":6,"maxDurability":354,"material":"Aramid"}]);
+            const [helmetData, setHelmetData] = useState([{"id":"Bomber_beanie","name":"Bomber beanie","class":1,"maxDurability":150,"material":"Aramid"},{"id":"Tac_Kek_FAST_MT_helmet__Replica_","name":"Tac-Kek FAST MT helmet (Replica)","class":1,"maxDurability":48,"material":"UHMWPE"},{"id":"TSh_4M_L_soft_tank_crew_helmet","name":"TSh-4M-L soft tank crew helmet","class":1,"maxDurability":105,"material":"Aramid"},{"id":"Kolpak_1S_riot_helmet","name":"Kolpak-1S riot helmet","class":2,"maxDurability":45,"material":"Aramid"},{"id":"Jack_o__lantern_tactical_pumpkin_helmet","name":"Jack-o\u0027-lantern tactical pumpkin helmet","class":2,"maxDurability":40,"material":"UHMWPE"},{"id":"LShZ_lightweight_helmet__Olive_Drab_","name":"LShZ lightweight helmet (Olive Drab)","class":3,"maxDurability":36,"material":"Aramid"},{"id":"Galvion_Caiman_Hybrid_helmet__Grey_","name":"Galvion Caiman Hybrid helmet (Grey)","class":3,"maxDurability":60,"material":"Combined materials"},{"id":"Galvion_Caiman_Hybrid_helmet__MultiCam_","name":"Galvion Caiman Hybrid helmet (MultiCam)","class":3,"maxDurability":60,"material":"Combined materials"},{"id":"Galvion_Caiman_Hybrid_helmet__Mutualist_","name":"Galvion Caiman Hybrid helmet (Mutualist)","class":3,"maxDurability":60,"material":"Combined materials"},{"id":"Galvion_Caiman_Hybrid_helmet__MultiCam_Alpine_","name":"Galvion Caiman Hybrid helmet (MultiCam Alpine)","class":3,"maxDurability":60,"material":"Combined materials"},{"id":"NFM_HJELM_helmet__Hellhound_Grey_","name":"NFM HJELM helmet (Hellhound Grey)","class":3,"maxDurability":78,"material":"Combined materials"},{"id":"UNTAR_helmet","name":"UNTAR helmet","class":3,"maxDurability":45,"material":"Aramid"},{"id":"6B47_Ratnik_BSh_helmet__Olive_Drab_","name":"6B47 Ratnik-BSh helmet (Olive Drab)","class":3,"maxDurability":45,"material":"Aramid"},{"id":"6B47_Ratnik_BSh_helmet__EMR_cover_","name":"6B47 Ratnik-BSh helmet (EMR cover)","class":3,"maxDurability":45,"material":"Aramid"},{"id":"6B47_Ratnik_BSh_helmet__EMR_Arctic_cover_","name":"6B47 Ratnik-BSh helmet (EMR Arctic cover)","class":3,"maxDurability":45,"material":"Aramid"},{"id":"SSh_68_steel_helmet__Olive_Drab_","name":"SSh-68 steel helmet (Olive Drab)","class":3,"maxDurability":54,"material":"Armor steel"},{"id":"FORT_Kiver_M_bulletproof_helmet","name":"FORT Kiver-M bulletproof helmet","class":3,"maxDurability":63,"material":"UHMWPE"},{"id":"NPP_KlASS_Tor_2_helmet__Olive_Drab_","name":"NPP KlASS Tor-2 helmet (Olive Drab)","class":3,"maxDurability":81,"material":"Combined materials"},{"id":"SSSh_94_SFERA_S_helmet","name":"SSSh-94 SFERA-S helmet","class":3,"maxDurability":135,"material":"Armor steel"},{"id":"DevTac_Ronin_ballistic_helmet","name":"DevTac Ronin ballistic helmet","class":3,"maxDurability":180,"material":"Combined materials"},{"id":"MSA_ACH_TC_2001_MICH_Series_helmet__Olive_Drab_","name":"MSA ACH TC-2001 MICH Series helmet (Olive Drab)","class":4,"maxDurability":30,"material":"Combined materials"},{"id":"MSA_ACH_TC_2002_MICH_Series_helmet__Olive_Drab_","name":"MSA ACH TC-2002 MICH Series helmet (Olive Drab)","class":4,"maxDurability":32,"material":"Combined materials"},{"id":"HighCom_Striker_ACHHC_IIIA_helmet__Black_","name":"HighCom Striker ACHHC IIIA helmet (Black)","class":4,"maxDurability":36,"material":"Combined materials"},{"id":"HighCom_Striker_ACHHC_IIIA_helmet__Olive_Drab_","name":"HighCom Striker ACHHC IIIA helmet (Olive Drab)","class":4,"maxDurability":36,"material":"Combined materials"},{"id":"MSA_Gallet_TC_800_High_Cut_combat_helmet__Black_","name":"MSA Gallet TC 800 High Cut combat helmet (Black)","class":4,"maxDurability":36,"material":"Combined materials"},{"id":"MTEK_STRIKE_Ballistic_helmet__Coyote_","name":"MTEK STRIKE Ballistic helmet (Coyote)","class":4,"maxDurability":40,"material":"Combined materials"},{"id":"MTEK_STRIKE_Ballistic_helmet__Coyote_MultiCam_Arid_","name":"MTEK STRIKE Ballistic helmet (Coyote/MultiCam Arid)","class":4,"maxDurability":40,"material":"Combined materials"},{"id":"Diamond_Age_Bastion_helmet__Black_","name":"Diamond Age Bastion helmet (Black)","class":4,"maxDurability":48,"material":"Combined materials"},{"id":"Ops_Core_FAST_MT_Super_High_Cut_helmet__Black_","name":"Ops-Core FAST MT Super High Cut helmet (Black)","class":4,"maxDurability":48,"material":"Combined materials"},{"id":"Ops_Core_FAST_MT_Super_High_Cut_helmet__Urban_Tan_","name":"Ops-Core FAST MT Super High Cut helmet (Urban Tan)","class":4,"maxDurability":48,"material":"Combined materials"},{"id":"Crye_Precision_AirFrame_helmet__Tan_","name":"Crye Precision AirFrame helmet (Tan)","class":4,"maxDurability":48,"material":"Combined materials"},{"id":"Ballistic_Armor_Co__Bastion_helmet__Armor_Black_","name":"Ballistic Armor Co. Bastion helmet (Armor Black)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"Ballistic_Armor_Co__Bastion_helmet__OD_Green_","name":"Ballistic Armor Co. Bastion helmet (OD Green)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"Ballistic_Armor_Co__Bastion_helmet__MultiCam_","name":"Ballistic Armor Co. Bastion helmet (MultiCam)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"MTEK_FLUX_Ballistic_helmet__Olive_Drab_","name":"MTEK FLUX Ballistic helmet (Olive Drab)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"MTEK_FLUX_Ballistic_helmet__MultiCam_Alpine_","name":"MTEK FLUX Ballistic helmet (MultiCam Alpine)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"Team_Wendy_EXFIL_Ballistic_Helmet__Black_","name":"Team Wendy EXFIL Ballistic Helmet (Black)","class":4,"maxDurability":54,"material":"Combined materials"},{"id":"Team_Wendy_EXFIL_Ballistic_Helmet__Coyote_Brown_","name":"Team Wendy EXFIL Ballistic Helmet (Coyote Brown)","class":4,"maxDurability":54,"material":"Combined materials"},{"id":"Diamond_Age_NeoSteel_High_Cut_helmet__Black_","name":"Diamond Age NeoSteel High Cut helmet (Black)","class":4,"maxDurability":72,"material":"Armor steel"},{"id":"Diamond_Age_NeoSteel_High_Cut_helmet__Aces_","name":"Diamond Age NeoSteel High Cut helmet (Aces)","class":4,"maxDurability":72,"material":"Armor steel"},{"id":"Diamond_Age_NeoSteel_High_Cut_helmet__Orange_Stains_","name":"Diamond Age NeoSteel High Cut helmet (Orange Stains)","class":4,"maxDurability":72,"material":"Armor steel"},{"id":"ZSh_1_2M_helmet__Black_cover_","name":"ZSh-1-2M helmet (Black cover)","class":4,"maxDurability":63,"material":"Combined materials"},{"id":"ZSh_1_2M_helmet__Olive_Drab_","name":"ZSh-1-2M helmet (Olive Drab)","class":4,"maxDurability":63,"material":"Combined materials"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Black_","name":"HighCom Striker ULACH IIIA helmet (Black)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Desert_Tan_","name":"HighCom Striker ULACH IIIA helmet (Desert Tan)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Coyote_Stripes_","name":"HighCom Striker ULACH IIIA helmet (Coyote Stripes)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Sand_","name":"HighCom Striker ULACH IIIA helmet (Sand)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Green_Stripes_","name":"HighCom Striker ULACH IIIA helmet (Green Stripes)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Mesh_Spray_","name":"HighCom Striker ULACH IIIA helmet (Mesh Spray)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Winter_Mesh_Spray_","name":"HighCom Striker ULACH IIIA helmet (Winter Mesh Spray)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"BNTI_LShZ_2DTM_helmet__Black_","name":"BNTI LShZ-2DTM helmet (Black)","class":4,"maxDurability":99,"material":"Combined materials"},{"id":"Maska_1SCh_bulletproof_helmet__Olive_Drab_","name":"Maska-1SCh bulletproof helmet (Olive Drab)","class":4,"maxDurability":108,"material":"Armor steel"},{"id":"Maska_1SCh_bulletproof_helmet__Killa_Edition_","name":"Maska-1SCh bulletproof helmet (Killa Edition)","class":4,"maxDurability":108,"material":"Armor steel"},{"id":"DevTac_Ronin_Respirator","name":"DevTac Ronin Respirator","class":4,"maxDurability":180,"material":"Combined materials"},{"id":"DevTac_Ronin_Respirator__Eternal_Green_","name":"DevTac Ronin Respirator (Eternal Green)","class":4,"maxDurability":180,"material":"Combined materials"},{"id":"DevTac_Ronin_Respirator__Beast_","name":"DevTac Ronin Respirator (Beast)","class":4,"maxDurability":180,"material":"Combined materials"},{"id":"Vulkan_5_LShZ_5_bulletproof_helmet__Black_","name":"Vulkan-5 LShZ-5 bulletproof helmet (Black)","class":5,"maxDurability":75,"material":"Combined materials"},{"id":"Vulkan_5_LShZ_5_bulletproof_helmet__Camouflage_","name":"Vulkan-5 LShZ-5 bulletproof helmet (Camouflage)","class":5,"maxDurability":75,"material":"Combined materials"},{"id":"Vulkan_5_LShZ_5_bulletproof_helmet__Flame_","name":"Vulkan-5 LShZ-5 bulletproof helmet (Flame)","class":5,"maxDurability":75,"material":"Combined materials"},{"id":"Vulkan_5_LShZ_5_bulletproof_helmet__Eight_ball_","name":"Vulkan-5 LShZ-5 bulletproof helmet (Eight-ball)","class":5,"maxDurability":75,"material":"Combined materials"},{"id":"Altyn_bulletproof_helmet__Olive_Drab_","name":"Altyn bulletproof helmet (Olive Drab)","class":5,"maxDurability":81,"material":"Armor steel"},{"id":"Rys_T_bulletproof_helmet__Black_","name":"Rys-T bulletproof helmet (Black)","class":5,"maxDurability":90,"material":"Titan"}]);
+            const [rigData, setRigData] = useState([{"id":"Tac_Kek_JayPC_plate_carrier__Black_","name":"Tac-Kek JayPC plate carrier (Black)","class":1,"maxDurability":13,"material":"-"},{"id":"Tac_Kek_JayPC_plate_carrier__OD_Green_","name":"Tac-Kek JayPC plate carrier (OD Green)","class":1,"maxDurability":15,"material":"-"},{"id":"Eagle_Allied_Industries_MBSS_plate_carrier__Coyote_Brown_","name":"Eagle Allied Industries MBSS plate carrier (Coyote Brown)","class":3,"maxDurability":12,"material":"-"},{"id":"Crye_Precision_JPC_Plate_Carrier__MultiCam_","name":"Crye Precision JPC Plate Carrier (MultiCam)","class":5,"maxDurability":24,"material":"-"},{"id":"Tasmanian_Tiger_Plate_Carrier_MKIII__Coyote_Brown_","name":"Tasmanian Tiger Plate Carrier MKIII (Coyote Brown)","class":5,"maxDurability":15,"material":"-"},{"id":"S_S_Precision_PlateFrame_plate_carrier__Goons_Edition_","name":"S\u0026S Precision PlateFrame plate carrier (Goons Edition)","class":5,"maxDurability":10,"material":"-"},{"id":"WARTECH_TV_115_plate_carrier__Olive_Drab_","name":"WARTECH TV-115 plate carrier (Olive Drab)","class":3,"maxDurability":52,"material":"Aramid"},{"id":"WARTECH_TV_110_plate_carrier__Coyote_","name":"WARTECH TV-110 plate carrier (Coyote)","class":4,"maxDurability":70,"material":"Aramid"},{"id":"Eagle_Industries_MMAC_plate_carrier__Ranger_Green_","name":"Eagle Industries MMAC plate carrier (Ranger Green)","class":4,"maxDurability":64,"material":"Aramid"},{"id":"Shellback_Tactical_Banshee_plate_carrier__A_TACS_AU_","name":"Shellback Tactical Banshee plate carrier (A-TACS AU)","class":4,"maxDurability":72,"material":"Aramid"},{"id":"Ars_Arma_A18_Skanda_plate_carrier__MultiCam_","name":"Ars Arma A18 Skanda plate carrier (MultiCam)","class":4,"maxDurability":86,"material":"Aramid"},{"id":"ANA_Tactical_M1_plate_carrier__OD_Green_","name":"ANA Tactical M1 plate carrier (OD Green)","class":4,"maxDurability":104,"material":"Aramid"},{"id":"First_Spear_Strandhogg_plate_carrier__Ranger_Green_","name":"First Spear Strandhogg plate carrier (Ranger Green)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"First_Spear_Strandhogg_plate_carrier__ABUPAT_","name":"First Spear Strandhogg plate carrier (ABUPAT)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"ECLiPSE_RBAV_AF_plate_carrier__Ranger_Green_","name":"ECLiPSE RBAV-AF plate carrier (Ranger Green)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"Stich_Profi_Plate_Carrier_V2__Black_","name":"Stich Profi Plate Carrier V2 (Black)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"Stich_Profi_Plate_Carrier_V2__MARPAT_Woodland_","name":"Stich Profi Plate Carrier V2 (MARPAT Woodland)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"CQC_Osprey_MK4A_plate_carrier__Assault__MTP_","name":"CQC Osprey MK4A plate carrier (Assault, MTP)","class":4,"maxDurability":132,"material":"Aramid"},{"id":"Crye_Precision_AVS_plate_carrier__Tagilla_Edition_","name":"Crye Precision AVS plate carrier (Tagilla Edition)","class":6,"maxDurability":60,"material":"Aramid"},{"id":"5_11_Tactical_TacTec_plate_carrier__Ranger_Green_","name":"5.11 Tactical TacTec plate carrier (Ranger Green)","class":5,"maxDurability":80,"material":"Aramid"},{"id":"5_11_Tactical_TacTec_plate_carrier__Storm_","name":"5.11 Tactical TacTec plate carrier (Storm)","class":5,"maxDurability":80,"material":"Aramid"},{"id":"Crye_Precision_CPC_plate_carrier__Goons_Edition_","name":"Crye Precision CPC plate carrier (Goons Edition)","class":5,"maxDurability":90,"material":"Aramid"},{"id":"Ars_Arma_CPC_MOD_1_plate_carrier__A_TACS_FG_","name":"Ars Arma CPC MOD.1 plate carrier (A-TACS FG)","class":5,"maxDurability":120,"material":"Aramid"},{"id":"Stich_Profi_Stich_Defense_mod_2_plate_carrier__MultiCam_","name":"Stich Profi Stich Defense mod.2 plate carrier (MultiCam)","class":6,"maxDurability":130,"material":"Aramid"},{"id":"ANA_Tactical_M2_plate_carrier__OD_Green_","name":"ANA Tactical M2 plate carrier (OD Green)","class":4,"maxDurability":96,"material":"Aramid"},{"id":"ANA_Tactical_M2_plate_carrier__MultiCam_Alpine_","name":"ANA Tactical M2 plate carrier (MultiCam Alpine)","class":4,"maxDurability":96,"material":"Aramid"},{"id":"Crye_Precision_AVS_plate_carrier__Ranger_Green_","name":"Crye Precision AVS plate carrier (Ranger Green)","class":4,"maxDurability":112,"material":"Aramid"},{"id":"Crye_Precision_AVS_plate_carrier__MultiCam_","name":"Crye Precision AVS plate carrier (MultiCam)","class":4,"maxDurability":112,"material":"Aramid"},{"id":"NPP_KlASS_Bagariy_plate_carrier__EMR_","name":"NPP KlASS Bagariy plate carrier (EMR)","class":5,"maxDurability":132,"material":"Aramid"},{"id":"6B5_16_Zh_86_Uley_armored_rig__Khaki_","name":"6B5-16 Zh-86 Uley armored rig (Khaki)","class":2,"maxDurability":160,"material":"TitanAramid"},{"id":"6B45_armored_rig__General_Purpose__EMR_","name":"6B45 armored rig (General Purpose, EMR)","class":5,"maxDurability":254,"material":"Aramid"},{"id":"6B45_armored_rig__Medic__EMR_","name":"6B45 armored rig (Medic, EMR)","class":5,"maxDurability":254,"material":"Aramid"},{"id":"6B45_armored_rig__Assault__EMR_","name":"6B45 armored rig (Assault, EMR)","class":6,"maxDurability":254,"material":"Aramid"},{"id":"CQC_Osprey_MK4A_plate_carrier__Protection__MTP_","name":"CQC Osprey MK4A plate carrier (Protection, MTP)","class":5,"maxDurability":132,"material":"Aramid"},{"id":"6B3TM_01_armored_rig__Khaki_","name":"6B3TM-01 armored rig (Khaki)","class":2,"maxDurability":86,"material":"Titan"},{"id":"6B5_15_Zh_86_Uley_armored_rig__Flora_","name":"6B5-15 Zh-86 Uley armored rig (Flora)","class":4,"maxDurability":110,"material":"CeramicAramid"}]);
+            const [faceData, setFaceData] = useState(FACE_SHIELD_DATA);
+            const [loadingArmor, setLoadingArmor] = useState(false);
+
             // Fetch Data from Tarkov.dev
             useEffect(() => {
                 const query = `
                 {
-                    items(categoryNames: "Ammo") {
+                    items(categoryNames: ["Ammo", "Visor"]) {
                         id
                         name
                         shortName
                         description
+                        categories { name }
                         properties {
                             ... on ItemPropertiesAmmo {
                                 caliber
@@ -391,6 +426,11 @@
                                 penetrationPower
                                 armorDamage
                                 initialSpeed
+                            }
+                            ... on ItemPropertiesVisor {
+                                class
+                                durability
+                                material { name destructibility }
                             }
                         }
                     }
@@ -406,8 +446,11 @@
                 })
                     .then(r => r.json())
                     .then(data => {
-                        const validItems = data.data.items.filter(item => item.properties && item.properties.damage > 0);
-                        const formatted = validItems.map(item => ({
+                        const allItems = data.data.items;
+
+                        // Parse Ammo
+                        const validAmmo = allItems.filter(item => item.properties && item.properties.damage > 0);
+                        const formattedAmmo = validAmmo.map(item => ({
                             id: item.id,
                             name: item.name,
                             caliber: normalizeCaliber(item.properties.caliber),
@@ -418,16 +461,41 @@
                             description: item.description || "No description available."
                         })).sort((a, b) => a.caliber.localeCompare(b.caliber) || a.pen - b.pen);
 
-                        if (formatted.length > 0) {
-                            setAmmoData(formatted);
-                            // Try to preserve selection if it matches by name, otherwise default
-                            setSelectedAmmo(prev => formatted.find(f => f.name === prev.name) || formatted.find(f => f.name.includes("BS")) || formatted[0]);
+                        if (formattedAmmo.length > 0) {
+                            setAmmoData(formattedAmmo);
+                            setSelectedAmmo(prev => formattedAmmo.find(f => f.name === prev.name) || formattedAmmo.find(f => f.name.includes("BS")) || formattedAmmo[0]);
                         }
+
+                        // Parse Visors
+                        const visors = [];
+
+                        allItems.forEach(item => {
+                            if (!item.properties || !item.properties.class || item.properties.durability <= 0) return;
+
+                            const props = item.properties;
+                            const isArmorObj = {
+                                id: item.id,
+                                name: item.name,
+                                shortName: item.shortName,
+                                class: props.class,
+                                maxDurability: props.durability,
+                                destructibility: props.material ? props.material.destructibility : 0.5,
+                                type: props.material ? props.material.name : "Unknown"
+                            };
+
+                            const catNames = item.categories.map(c => c.name);
+                            if (catNames.includes("Visor")) visors.push(isArmorObj);
+                        });
+
+                        const sortDesc = (a, b) => b.class - a.class;
+
+                        if (visors.length > 0) setFaceData(visors.sort(sortDesc));
+
                         setLoading(false);
                     })
                     .catch(err => {
                         console.error("API Error:", err);
-                        setLoading(false); // Fallback to initial data
+                        setLoading(false);
                     });
             }, []);
 
@@ -439,14 +507,30 @@
                 setDurability(selectedArmor.maxDurability);
             }, [selectedArmor]);
 
-            let currentList = ARMOR_DATA;
-            if (armorMode === "Helmet") currentList = HELMET_DATA;
-            if (armorMode === "Face") currentList = FACE_SHIELD_DATA;
+            let currentList = armorData;
+            if (armorMode === "Rig") currentList = rigData;
+            if (armorMode === "Helmet") currentList = helmetData;
+            if (armorMode === "Face") currentList = faceData;
+
+            // Sort by class descending for the selected category display
+            currentList = [...currentList].sort((a, b) => b.class - a.class);
 
             const penChance = calculatePenetrationChance(selectedAmmo.pen, selectedArmor.class, durability, selectedArmor.maxDurability);
             const rating = getRating(penChance);
             const estimatedShots = useMemo(() => simulateShotsToKill(selectedAmmo, selectedArmor), [selectedAmmo, selectedArmor]);
             const predictedDamage = penChance > 80 ? selectedAmmo.damage : "Blunt";
+
+            // Calculate Best In Class Ordnance
+            const bestAmmoz = useMemo(() => {
+                if (!ammoData || ammoData.length === 0) return [];
+                const calibers = {};
+                ammoData.forEach(ammo => {
+                    if (!calibers[ammo.caliber] || calibers[ammo.caliber].pen < ammo.pen) {
+                        calibers[ammo.caliber] = ammo;
+                    }
+                });
+                return Object.values(calibers).sort((a, b) => b.pen - a.pen);
+            }, [ammoData]);
 
             // Filter logic for ammo selector
             const [searchText, setSearchText] = useState("");
@@ -474,7 +558,8 @@
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                        <div className="lg:col-span-4 flex flex-col gap-6 relative z-30">
+                        {/* COLUMN 1: OFFENSE PARAMETERS */}
+                        <div className="lg:col-span-3 flex flex-col gap-6 relative z-30">
                             <SectionPanel title="OFFENSE PARAMETERS">
                                 <label className="text-xs font-bold text-tarkov-text uppercase mb-2 block">Select Ammunition {loading && "(Updating...)"}</label>
                                 <AmmoSelect
@@ -520,7 +605,8 @@
                             </div>
                         </div>
 
-                        <div className="lg:col-span-4 flex flex-col justify-center">
+                        {/* COLUMN 2: PENETRATION RESULTS */}
+                        <div className="lg:col-span-3 flex flex-col justify-center">
                             <div className="glass-panel p-8 text-center relative tech-border rounded min-h-[400px] flex flex-col justify-center items-center">
                                 <div className="absolute inset-0 pointer-events-none opacity-20 flex items-center justify-center">
                                     <svg viewBox="0 0 100 100" className="w-[80%] h-[80%] stroke-tarkov-accent fill-none" strokeWidth="0.5">
@@ -561,14 +647,16 @@
                             </div>
                         </div>
 
-                        <div className="lg:col-span-4 flex flex-col gap-6">
+                        {/* COLUMN 3: DEFENSE PARAMETERS */}
+                        <div className="lg:col-span-3 flex flex-col gap-6">
                             <SectionPanel title="DEFENSE PARAMETERS">
                                 <div className="flex flex-col gap-2 mb-4">
-                                    <label className="text-xs font-bold text-tarkov-text uppercase">Target Gear</label>
-                                    <div className="flex bg-slate-900/50 rounded p-1 border border-tarkov-border">
-                                        <TabButton active={armorMode === "Armor"} onClick={() => { setArmorMode("Armor"); setSelectedArmor(ARMOR_DATA[0]); }}>VEST</TabButton>
-                                        <TabButton active={armorMode === "Helmet"} onClick={() => { setArmorMode("Helmet"); setSelectedArmor(HELMET_DATA[0]); }}>HELMET</TabButton>
-                                        <TabButton active={armorMode === "Face"} onClick={() => { setArmorMode("Face"); setSelectedArmor(FACE_SHIELD_DATA[0]); }}>FACE</TabButton>
+                                    <label className="text-xs font-bold text-tarkov-text uppercase block">Target Gear {loadingArmor && "(Updating...)"}</label>
+                                    <div className="flex bg-slate-900/50 rounded p-1 border border-tarkov-border overflow-x-auto custom-scrollbar whitespace-nowrap">
+                                        <TabButton active={armorMode === "Armor"} onClick={() => { setArmorMode("Armor"); setSelectedArmor(armorData[0] || ARMOR_DATA[0]); }}>VEST</TabButton>
+                                        <TabButton active={armorMode === "Rig"} onClick={() => { setArmorMode("Rig"); setSelectedArmor(rigData[0] || ARMOR_DATA[0]); }}>RIG</TabButton>
+                                        <TabButton active={armorMode === "Helmet"} onClick={() => { setArmorMode("Helmet"); setSelectedArmor(helmetData[0] || HELMET_DATA[0]); }}>HELMET</TabButton>
+                                        <TabButton active={armorMode === "Face"} onClick={() => { setArmorMode("Face"); setSelectedArmor(faceData[0] || FACE_SHIELD_DATA[0]); }}>FACE</TabButton>
                                     </div>
                                 </div>
 
@@ -597,7 +685,7 @@
                             <div className="glass-panel p-4 flex flex-col gap-2 font-mono text-xs text-gray-400">
                                 <div className="flex justify-between border-b border-tarkov-border pb-1">
                                     <span>MATERIAL</span>
-                                    <span className="text-gray-200">{selectedArmor.type}</span>
+                                    <span className="text-gray-200">{selectedArmor.material || selectedArmor.type}</span>
                                 </div>
                                 <div className="flex justify-between border-b border-tarkov-border pb-1">
                                     <span>DESTRUCTIBILITY</span>
@@ -608,6 +696,27 @@
                                     <span className="text-tarkov-accent">{selectedArmor.maxDurability} HP</span>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* COLUMN 4: BEST IN CLASS AMMO */}
+                        <div className="lg:col-span-3 flex flex-col gap-6">
+                            <SectionPanel title="TOP TIER ORDNANCE">
+                                <div className="text-xs text-gray-500 mb-2 font-mono uppercase border-b border-tarkov-border pb-1">Highest Penetration Per Caliber</div>
+                                <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-2" style={{ maxHeight: '440px' }}>
+                                    {bestAmmoz.map(a => (
+                                        <div key={a.id} className="glass-panel p-2 flex justify-between items-center bg-slate-900/40 border border-tarkov-border hover:border-tarkov-accent/50 hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => setSelectedAmmo(a)}>
+                                            <div className="overflow-hidden mr-2">
+                                                <div className="text-[10px] text-gray-400 font-bold uppercase truncate">{a.caliber}</div>
+                                                <div className="text-sm font-mono text-gray-200 truncate">{a.name}</div>
+                                            </div>
+                                            <div className="flex flex-col items-end shrink-0">
+                                                <div className="text-tarkov-accent font-tech text-lg leading-none">{a.pen}</div>
+                                                <div className="text-[8px] text-gray-500 font-mono text-right mt-1">PEN</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </SectionPanel>
                         </div>
 
                     </div>
@@ -710,19 +819,37 @@
         }
 
         function ArmorSelect({ list, selected, onSelect }) {
+            const [search, setSearch] = useState("");
+
+            const filtered = useMemo(() => {
+                if (!list || list.length === 0) return [];
+                return list.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) || a.shortName?.toLowerCase().includes(search.toLowerCase()));
+            }, [search, list]);
+
             return (
-                <div className="grid grid-cols-1 gap-1 max-h-64 overflow-y-auto pr-2 custom-scrollbar border-t border-b border-tarkov-border/30 py-2">
-                    {list.map(item => (
-                        <button
-                            key={item.id}
-                            className={`p-2 text-left transition-all text-xs font-mono flex justify-between items-center group relative hover:pl-3 ${selected.id === item.id ? "text-gray-100 bg-white/5" : "text-gray-500 hover:text-gray-300"}`}
-                            onClick={() => onSelect(item)}
-                        >
-                            {selected.id === item.id && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-tarkov-accent"></div>}
-                            <span className="truncate pr-2">{item.name}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 border ${getClassBorder(item.class)} text-gray-500`}>LVL {item.class}</span>
-                        </button>
-                    ))}
+                <div className="flex flex-col gap-2">
+                    <input
+                        type="text"
+                        placeholder="SEARCH GEAR..."
+                        className="w-full bg-slate-900/50 p-2 text-xs text-tarkov-accent placeholder-gray-500 border border-tarkov-border focus:border-tarkov-accent focus:outline-none font-mono uppercase rounded-sm"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                    <div className="grid grid-cols-1 gap-1 h-[200px] overflow-y-auto pr-2 custom-scrollbar border-t border-b border-tarkov-border/30 py-2">
+                        {filtered.length === 0 && <div className="text-xs text-gray-500 font-mono italic p-2">No matching gear found.</div>}
+                        {filtered.map(item => (
+                            <button
+                                key={item.id}
+                                className={`p-2 text-left transition-all text-xs font-mono flex justify-between items-center group relative hover:pl-3 w-full border border-transparent ${selected?.id === item.id ? "text-gray-100 bg-tarkov-accent/10 border-tarkov-accent/30" : "text-gray-500 hover:text-gray-300 hover:bg-slate-800"}`}
+                                onClick={() => onSelect(item)}
+                                title={item.name}
+                            >
+                                {selected?.id === item.id && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-tarkov-accent"></div>}
+                                <span className="pr-2 leading-tight flex-1">{item.name}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 border ${getClassBorder(item.class)} text-gray-500 shrink-0 bg-slate-900/40 mt-auto mb-auto`}>LVL {item.class}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             );
         }
