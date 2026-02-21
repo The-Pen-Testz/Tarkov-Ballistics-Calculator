@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -27,11 +27,11 @@
                 extend: {
                     colors: {
                         tarkov: {
-                            black: '#0f172a',
-                            dark: '#1e293b',
-                            panel: '#1e293b',
-                            border: '#334155',
-                            text: '#94a3b8',
+                            black: '#171717',
+                            dark: '#262626',
+                            panel: '#262626',
+                            border: '#404040',
+                            text: '#a3a3a3',
                             accent: '#9a8c7c',
                             orange: '#ea580c',
                             red: '#dc2626',
@@ -44,7 +44,7 @@
                         tech: ['Share Tech Mono', 'monospace']
                     },
                     backgroundImage: {
-                        'grid-pattern': "linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px)"
+                        'grid-pattern': "linear-gradient(to right, #262626 1px, transparent 1px), linear-gradient(to bottom, #262626 1px, transparent 1px)"
                     }
                 }
             }
@@ -56,7 +56,7 @@
 
     <style>
         body {
-            background-color: #0f172a;
+            background-color: #171717;
             color: #f1f5f9;
             font-family: 'Inter', sans-serif;
             background-size: cover;
@@ -579,10 +579,33 @@
                         </div>
                     </header>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
+
+                        {/* COLUMN 0: HOW TO GUIDE */}
+                        <div className="flex flex-col gap-6">
+                            <SectionPanel title="FIELD MANUAL">
+                                <div className="text-xs text-gray-400 font-mono space-y-4 leading-relaxed">
+                                    <p>
+                                        <span className="text-tarkov-accent font-bold">1. OFFENSE:</span> Search and select your ammunition from the registry.
+                                    </p>
+                                    <p>
+                                        <span className="text-tarkov-accent font-bold">2. DEFENSE:</span> Choose the target's armor class (Vest, Rig, Helmet, Face) and locate their specific equipment.
+                                    </p>
+                                    <p>
+                                        <span className="text-tarkov-accent font-bold">3. DURABILITY:</span> Use the slider to simulate un-repaired armor. Degraded materials offer significantly less ballistic resistance.
+                                    </p>
+                                    <p>
+                                        <span className="text-tarkov-accent font-bold">4. RESULTS:</span> The main terminal computes the probability of a <span className="text-gray-200">first-round penetration</span>, alongside estimated shots to kill.
+                                    </p>
+                                    <div className="mt-4 p-3 bg-neutral-900/40 border-l-2 border-tarkov-accent text-[10px] text-gray-500">
+                                        Note: Tarkov ballistics involve complex fragmentation and ricochet RNG. These are statistical estimates.
+                                    </div>
+                                </div>
+                            </SectionPanel>
+                        </div>
 
                         {/* COLUMN 1: OFFENSE PARAMETERS */}
-                        <div className="lg:col-span-3 flex flex-col gap-6 relative z-30">
+                        <div className="flex flex-col gap-6 relative z-30">
                             <SectionPanel title="OFFENSE PARAMETERS">
                                 <label className="text-xs font-bold text-tarkov-text uppercase mb-2 block">Select Ammunition {loading && "(Updating...)"}</label>
                                 <AmmoSelect
@@ -591,7 +614,7 @@
                                     onSelect={setSelectedAmmo}
                                 />
 
-                                <div className="mt-4 p-3 bg-slate-900/40 border border-tarkov-border rounded text-xs text-gray-300 italic">
+                                <div className="mt-4 p-3 bg-neutral-900/40 border border-tarkov-border rounded text-xs text-gray-300 italic">
                                     "{selectedAmmo.description}"
                                 </div>
 
@@ -612,16 +635,16 @@
                                 </div>
 
                                 <div className="flex gap-3 relative z-10">
-                                    <a href="https://www.youtube.com/@ThePenTestz" target="_blank" className="w-8 h-8 flex items-center justify-center bg-slate-800/80 hover:bg-tarkov-accent/20 border border-tarkov-border hover:border-tarkov-accent transition-all rounded text-gray-400 hover:text-white" title="YouTube">
+                                    <a href="https://www.youtube.com/@ThePenTestz" target="_blank" className="w-8 h-8 flex items-center justify-center bg-neutral-800/80 hover:bg-tarkov-accent/20 border border-tarkov-border hover:border-tarkov-accent transition-all rounded text-gray-400 hover:text-white" title="YouTube">
                                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>
                                     </a>
-                                    <a href="https://www.twitch.tv/thepentestz" target="_blank" className="w-8 h-8 flex items-center justify-center bg-slate-800/80 hover:bg-tarkov-accent/20 border border-tarkov-border hover:border-tarkov-accent transition-all rounded text-gray-400 hover:text-white" title="Twitch">
+                                    <a href="https://www.twitch.tv/thepentestz" target="_blank" className="w-8 h-8 flex items-center justify-center bg-neutral-800/80 hover:bg-tarkov-accent/20 border border-tarkov-border hover:border-tarkov-accent transition-all rounded text-gray-400 hover:text-white" title="Twitch">
                                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" /></svg>
                                     </a>
-                                    <a href="https://www.tiktok.com/@the.pen.testz" target="_blank" className="w-8 h-8 flex items-center justify-center bg-slate-800/80 hover:bg-tarkov-accent/20 border border-tarkov-border hover:border-tarkov-accent transition-all rounded text-gray-400 hover:text-white" title="TikTok">
+                                    <a href="https://www.tiktok.com/@the.pen.testz" target="_blank" className="w-8 h-8 flex items-center justify-center bg-neutral-800/80 hover:bg-tarkov-accent/20 border border-tarkov-border hover:border-tarkov-accent transition-all rounded text-gray-400 hover:text-white" title="TikTok">
                                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" /></svg>
                                     </a>
-                                    <a href="mailto:thepentestz@gmail.com" className="w-8 h-8 flex items-center justify-center bg-slate-800/80 hover:bg-tarkov-accent/20 border border-tarkov-border hover:border-tarkov-accent transition-all rounded text-gray-400 hover:text-white" title="Email">
+                                    <a href="mailto:thepentestz@gmail.com" className="w-8 h-8 flex items-center justify-center bg-neutral-800/80 hover:bg-tarkov-accent/20 border border-tarkov-border hover:border-tarkov-accent transition-all rounded text-gray-400 hover:text-white" title="Email">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                                     </a>
                                 </div>
@@ -629,7 +652,7 @@
                         </div>
 
                         {/* COLUMN 2: PENETRATION RESULTS */}
-                        <div className="lg:col-span-3 flex flex-col justify-center">
+                        <div className="flex flex-col justify-center">
                             <div className="glass-panel p-8 text-center relative tech-border rounded min-h-[400px] flex flex-col justify-center items-center">
                                 <div className="absolute inset-0 pointer-events-none opacity-20 flex items-center justify-center">
                                     <svg viewBox="0 0 100 100" className="w-[80%] h-[80%] stroke-tarkov-accent fill-none" strokeWidth="0.5">
@@ -645,16 +668,16 @@
                                     <div className={`text-7xl font-tech font-black mb-2 ${getGradientColor(penChance)} drop-shadow-sm`}>
                                         {penChance.toFixed(0)}<span className="text-3xl">%</span>
                                     </div>
-                                    <div className={`inline-block px-4 py-1 border ${getBorderColor(penChance)} ${getTextColor(penChance)} font-bold tracking-widest uppercase bg-slate-900/50 backdrop-blur`}>
+                                    <div className={`inline-block px-4 py-1 border ${getBorderColor(penChance)} ${getTextColor(penChance)} font-bold tracking-widest uppercase bg-neutral-900/50 backdrop-blur`}>
                                         {rating.text}
                                     </div>
 
                                     <div className="mt-12 grid grid-cols-2 gap-4 w-full">
-                                        <div className="border border-tarkov-border bg-slate-900/40 p-2">
+                                        <div className="border border-tarkov-border bg-neutral-900/40 p-2">
                                             <div className="text-[10px] text-gray-400 uppercase">Est. First Hit Dmg</div>
                                             <div className="text-xl font-mono text-gray-200">{predictedDamage}</div>
                                         </div>
-                                        <div className="border border-tarkov-border bg-slate-900/40 p-2 relative overflow-hidden">
+                                        <div className="border border-tarkov-border bg-neutral-900/40 p-2 relative overflow-hidden">
                                             {estimatedShots === "50+" && <div className="absolute inset-0 bg-red-900/20 animate-pulse"></div>}
                                             <div className="text-[10px] text-gray-400 uppercase relative z-10">Shots to Kill (Est.)</div>
                                             <div className="text-xl font-mono text-gray-200 relative z-10">{estimatedShots}</div>
@@ -671,11 +694,11 @@
                         </div>
 
                         {/* COLUMN 3: DEFENSE PARAMETERS */}
-                        <div className="lg:col-span-3 flex flex-col gap-6">
+                        <div className="flex flex-col gap-6">
                             <SectionPanel title="DEFENSE PARAMETERS">
                                 <div className="flex flex-col gap-2 mb-4">
                                     <label className="text-xs font-bold text-tarkov-text uppercase block">Target Gear {loadingArmor && "(Updating...)"}</label>
-                                    <div className="flex bg-slate-900/50 rounded p-1 border border-tarkov-border overflow-x-auto custom-scrollbar whitespace-nowrap">
+                                    <div className="flex bg-neutral-900/50 rounded p-1 border border-tarkov-border overflow-x-auto custom-scrollbar whitespace-nowrap">
                                         <TabButton active={armorMode === "Armor"} onClick={() => { setArmorMode("Armor"); setSelectedArmor(armorData[0] || ARMOR_DATA[0]); }}>VEST</TabButton>
                                         <TabButton active={armorMode === "Rig"} onClick={() => { setArmorMode("Rig"); setSelectedArmor(rigData[0] || ARMOR_DATA[0]); }}>RIG</TabButton>
                                         <TabButton active={armorMode === "Helmet"} onClick={() => { setArmorMode("Helmet"); setSelectedArmor(helmetData[0] || HELMET_DATA[0]); }}>HELMET</TabButton>
@@ -722,12 +745,12 @@
                         </div>
 
                         {/* COLUMN 4: BEST IN CLASS AMMO */}
-                        <div className="lg:col-span-3 flex flex-col gap-6">
+                        <div className="flex flex-col gap-6">
                             <SectionPanel title="TOP TIER ORDNANCE">
                                 <div className="text-xs text-gray-500 mb-2 font-mono uppercase border-b border-tarkov-border pb-1">Highest Penetration Per Caliber</div>
                                 <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-2" style={{ maxHeight: '440px' }}>
                                     {bestAmmoz.map(a => (
-                                        <div key={a.id} className="glass-panel p-2 flex justify-between items-center bg-slate-900/40 border border-tarkov-border hover:border-tarkov-accent/50 hover:bg-slate-800 transition-colors cursor-pointer" onClick={() => setSelectedAmmo(a)}>
+                                        <div key={a.id} className="glass-panel p-2 flex justify-between items-center bg-neutral-900/40 border border-tarkov-border hover:border-tarkov-accent/50 hover:bg-neutral-800 transition-colors cursor-pointer" onClick={() => setSelectedAmmo(a)}>
                                             <div className="overflow-hidden mr-2">
                                                 <div className="text-[10px] text-gray-400 font-bold uppercase truncate">{a.caliber}</div>
                                                 <div className="text-sm font-mono text-gray-200 truncate">{a.name}</div>
@@ -747,9 +770,9 @@
                     <footer className="mt-12 text-center border-t border-tarkov-border pt-6 opacity-60 hover:opacity-100 transition-opacity flex flex-col gap-4">
                         <button
                             onClick={() => setIsFeedbackOpen(true)}
-                            className="text-xs font-mono font-bold text-tarkov-accent border border-tarkov-accent/50 bg-slate-900/50 hover:bg-tarkov-accent/20 px-4 py-2 mx-auto rounded transition-colors"
+                            className="text-xs font-mono font-bold text-tarkov-accent border border-tarkov-accent/50 bg-neutral-900/50 hover:bg-tarkov-accent/20 px-4 py-2 mx-auto rounded transition-colors"
                         >
-                            <span className="mr-2">★</span>COMMUNITY INTEL BOARD (FEEDBACK)
+                            <span className="mr-2">?</span>COMMUNITY INTEL BOARD (FEEDBACK)
                         </button>
                         <div>
                             <p className="text-xs font-mono text-tarkov-text">
@@ -785,7 +808,7 @@
 
         function DataCard({ label, value, highlight }) {
             return (
-                <div className={`p-3 border-l-2 ${highlight ? 'border-tarkov-accent bg-gradient-to-r from-tarkov-accent/10 to-transparent' : 'border-tarkov-border bg-slate-900/40'}`}>
+                <div className={`p-3 border-l-2 ${highlight ? 'border-tarkov-accent bg-gradient-to-r from-tarkov-accent/10 to-transparent' : 'border-tarkov-border bg-neutral-900/40'}`}>
                     <div className="text-[10px] text-gray-400 uppercase tracking-wider">{label}</div>
                     <div className={`font-mono text-lg font-bold ${highlight ? 'text-tarkov-accent' : 'text-gray-200'}`}>{value}</div>
                 </div>
@@ -795,7 +818,7 @@
         function TabButton({ children, active, onClick }) {
             return (
                 <button
-                    className={`flex-1 px-2 py-1 text-[10px] font-bold rounded transition-all ${active ? "bg-slate-800 shadow text-gray-100" : "text-gray-500 hover:text-gray-300"}`}
+                    className={`flex-1 px-2 py-1 text-[10px] font-bold rounded transition-all ${active ? "bg-neutral-800 shadow text-gray-100" : "text-gray-500 hover:text-gray-300"}`}
                     onClick={onClick}
                 >{children}</button>
             );
@@ -803,52 +826,38 @@
 
         function AmmoSelect({ ammoList, selected, onSelect }) {
             const [search, setSearch] = useState("");
-            const [isOpen, setIsOpen] = useState(false);
 
             const filtered = useMemo(() => {
                 return ammoList.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) || a.caliber.toLowerCase().includes(search.toLowerCase()));
             }, [search, ammoList]);
 
             return (
-                <div className="relative">
-                    <div
-                        className="bg-slate-900/40 border border-tarkov-border p-3 cursor-pointer hover:border-tarkov-accent transition-colors flex justify-between items-center group"
-                        onClick={() => setIsOpen(!isOpen)}
-                    >
-                        <span className="font-mono text-sm truncate text-gray-200 group-hover:text-white transition-colors">{selected.name}</span>
-                        <span className="text-xs text-tarkov-accent">▼</span>
+                <div className="flex flex-col gap-2">
+                    <input
+                        type="text"
+                        placeholder="SEARCH ORDNANCE..."
+                        className="w-full bg-neutral-900/50 p-2 text-xs text-tarkov-accent placeholder-gray-500 border border-tarkov-border focus:border-tarkov-accent focus:outline-none font-mono uppercase rounded-sm"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                    <div className="grid grid-cols-1 gap-1 h-[200px] overflow-y-auto pr-2 custom-scrollbar border-t border-b border-tarkov-border/30 py-2">
+                        {filtered.length === 0 && <div className="text-xs text-gray-500 font-mono italic p-2">No ordnance found.</div>}
+                        {filtered.map(ammo => (
+                            <button
+                                key={ammo.id}
+                                className={`p-2 text-left transition-all text-xs font-mono flex justify-between items-center group relative hover:pl-3 w-full border border-transparent ${selected?.id === ammo.id ? "text-gray-100 bg-tarkov-accent/10 border-tarkov-accent/30" : "text-gray-500 hover:text-gray-300 hover:bg-neutral-800"}`}
+                                onClick={() => onSelect(ammo)}
+                                title={ammo.name}
+                            >
+                                {selected?.id === ammo.id && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-tarkov-accent"></div>}
+                                <div className="pr-2 leading-tight flex-1 flex flex-col">
+                                    <span className="truncate">{ammo.name}</span>
+                                    <span className="text-[10px] text-gray-600 mt-0.5">{ammo.caliber}</span>
+                                </div>
+                                <span className={`text-[10px] px-1.5 py-0.5 border border-tarkov-border text-gray-500 shrink-0 bg-neutral-900/40 mt-auto mb-auto`}>{ammo.pen} PEN</span>
+                            </button>
+                        ))}
                     </div>
-
-                    {isOpen && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900/95 border border-tarkov-accent/50 backdrop-blur-xl shadow-2xl z-50 max-h-80 flex flex-col">
-                            <input
-                                autoFocus
-                                type="text"
-                                placeholder="SEARCH ORDANCE..."
-                                className="w-full bg-transparent p-3 text-sm text-tarkov-accent placeholder-gray-500 border-b border-tarkov-border focus:outline-none font-mono uppercase"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                            <div className="overflow-y-auto flex-1 custom-scrollbar">
-                                {filtered.map(ammo => (
-                                    <div
-                                        key={ammo.id}
-                                        className={`p-2 pl-4 cursor-pointer text-xs font-mono border-l-2 hover:bg-slate-800 transition-colors ${ammo.id === selected.id ? "border-tarkov-accent bg-slate-800 text-gray-100" : "border-transparent text-gray-400"}`}
-                                        onClick={() => {
-                                            onSelect(ammo);
-                                            setIsOpen(false);
-                                            setSearch("");
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-center pr-2">
-                                            <span>{ammo.name}</span>
-                                            <span className="text-tarkov-accent/90">{ammo.pen} PEN</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         }
@@ -866,7 +875,7 @@
                     <input
                         type="text"
                         placeholder="SEARCH GEAR..."
-                        className="w-full bg-slate-900/50 p-2 text-xs text-tarkov-accent placeholder-gray-500 border border-tarkov-border focus:border-tarkov-accent focus:outline-none font-mono uppercase rounded-sm"
+                        className="w-full bg-neutral-900/50 p-2 text-xs text-tarkov-accent placeholder-gray-500 border border-tarkov-border focus:border-tarkov-accent focus:outline-none font-mono uppercase rounded-sm"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -875,13 +884,13 @@
                         {filtered.map(item => (
                             <button
                                 key={item.id}
-                                className={`p-2 text-left transition-all text-xs font-mono flex justify-between items-center group relative hover:pl-3 w-full border border-transparent ${selected?.id === item.id ? "text-gray-100 bg-tarkov-accent/10 border-tarkov-accent/30" : "text-gray-500 hover:text-gray-300 hover:bg-slate-800"}`}
+                                className={`p-2 text-left transition-all text-xs font-mono flex justify-between items-center group relative hover:pl-3 w-full border border-transparent ${selected?.id === item.id ? "text-gray-100 bg-tarkov-accent/10 border-tarkov-accent/30" : "text-gray-500 hover:text-gray-300 hover:bg-neutral-800"}`}
                                 onClick={() => onSelect(item)}
                                 title={item.name}
                             >
                                 {selected?.id === item.id && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-tarkov-accent"></div>}
                                 <span className="pr-2 leading-tight flex-1">{item.name}</span>
-                                <span className={`text-[10px] px-1.5 py-0.5 border ${getClassBorder(item.class)} text-gray-500 shrink-0 bg-slate-900/40 mt-auto mb-auto`}>LVL {item.class}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 border ${getClassBorder(item.class)} text-gray-500 shrink-0 bg-neutral-900/40 mt-auto mb-auto`}>LVL {item.class}</span>
                             </button>
                         ))}
                     </div>
@@ -1004,7 +1013,7 @@
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
                     <div className="glass-panel w-full max-w-5xl border border-tarkov-accent/50 shadow-2xl shadow-tarkov-accent/20 flex flex-col max-h-[90vh]">
-                        <div className="bg-slate-900/80 p-4 border-b border-tarkov-accent/30 flex justify-between items-center shrink-0">
+                        <div className="bg-neutral-900/80 p-4 border-b border-tarkov-accent/30 flex justify-between items-center shrink-0">
                             <h3 className="font-tech text-tarkov-accent text-lg flex items-center gap-2">
                                 <span className="w-2 h-2 bg-tarkov-accent rounded-full animate-pulse"></span>
                                 COMMUNITY INTEL BOARD
@@ -1016,13 +1025,13 @@
 
                         <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                             {/* Form Side */}
-                            <div className="w-full md:w-1/3 p-6 border-b md:border-b-0 md:border-r border-tarkov-accent/20 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-slate-900/40">
+                            <div className="w-full md:w-1/3 p-6 border-b md:border-b-0 md:border-r border-tarkov-accent/20 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-neutral-900/40">
                                 <h4 className="text-xs font-mono text-gray-400 mb-4 border-b border-tarkov-border pb-1">SUBMIT NEW INTEL</h4>
                                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                                     <div>
                                         <label className="block text-[10px] font-mono text-gray-400 mb-1">CATEGORY</label>
                                         <select
-                                            className="w-full bg-slate-900/80 border border-tarkov-border text-gray-200 font-mono text-xs p-2 focus:border-tarkov-accent outline-none hover:border-gray-500 transition-colors"
+                                            className="w-full bg-neutral-900/80 border border-tarkov-border text-gray-200 font-mono text-xs p-2 focus:border-tarkov-accent outline-none hover:border-gray-500 transition-colors"
                                             value={feedbackType}
                                             onChange={(e) => setFeedbackType(e.target.value)}
                                         >
@@ -1036,7 +1045,7 @@
                                     <div className="flex-1">
                                         <label className="block text-[10px] font-mono text-gray-400 mb-1">MESSAGE TRANSMISSION</label>
                                         <textarea
-                                            className="w-full h-32 bg-slate-900/80 border border-tarkov-border text-gray-200 font-mono text-xs p-3 focus:border-tarkov-accent outline-none custom-scrollbar resize-none hover:border-gray-500 transition-colors"
+                                            className="w-full h-32 bg-neutral-900/80 border border-tarkov-border text-gray-200 font-mono text-xs p-3 focus:border-tarkov-accent outline-none custom-scrollbar resize-none hover:border-gray-500 transition-colors"
                                             placeholder="Provide intel... (Press Enter to submit, Shift+Enter for new line)"
                                             value={message}
                                             onChange={(e) => setMessage(e.target.value)}
@@ -1047,7 +1056,7 @@
 
                                     <button
                                         type="submit"
-                                        className="w-full py-2 text-xs font-mono font-bold text-slate-900 bg-tarkov-accent hover:bg-orange-400 border border-tarkov-accent transition-colors shadow-[0_0_10px_rgba(255,153,0,0.2)] mt-2"
+                                        className="w-full py-2 text-xs font-mono font-bold text-neutral-900 bg-tarkov-accent hover:bg-orange-400 border border-tarkov-accent transition-colors shadow-[0_0_10px_rgba(255,153,0,0.2)] mt-2"
                                     >
                                         SUBMIT TO NETWORK
                                     </button>
@@ -1066,7 +1075,7 @@
                                         <button
                                             key={cat}
                                             onClick={() => setActiveTab(cat)}
-                                            className={`whitespace-nowrap px-3 py-1 text-[10px] font-mono font-bold uppercase transition-colors border ${activeTab === cat ? 'bg-tarkov-accent/20 text-tarkov-accent border-tarkov-accent/50 selection' : 'bg-slate-900/50 text-gray-500 border-tarkov-border hover:bg-slate-800 hover:text-gray-300'}`}
+                                            className={`whitespace-nowrap px-3 py-1 text-[10px] font-mono font-bold uppercase transition-colors border ${activeTab === cat ? 'bg-tarkov-accent/20 text-tarkov-accent border-tarkov-accent/50 selection' : 'bg-neutral-900/50 text-gray-500 border-tarkov-border hover:bg-neutral-800 hover:text-gray-300'}`}
                                         >
                                             {cat}
                                         </button>
@@ -1080,14 +1089,14 @@
                                         </div>
                                     ) : (
                                         sortedFeedbacks.map(f => (
-                                            <div key={f.id} className="relative glass-panel bg-slate-800/40 border border-tarkov-border p-4 hover:border-tarkov-accent/30 transition-colors flex gap-4 group">
+                                            <div key={f.id} className="relative glass-panel bg-neutral-800/40 border border-tarkov-border p-4 hover:border-tarkov-accent/30 transition-colors flex gap-4 group">
                                                 {/* Upvote Column */}
                                                 <div className="flex flex-col items-center shrink-0 w-8">
                                                     <button
                                                         onClick={() => handleUpvote(f.id, f.upvotes, f.hasVoted)}
                                                         className={`text-xl leading-none hover:drop-shadow-[0_0_5px_rgba(255,153,0,0.8)] transition-all ${f.hasVoted ? 'text-tarkov-accent drop-shadow-[0_0_5px_rgba(255,153,0,0.8)]' : 'text-gray-600 hover:text-gray-300'}`}
                                                     >
-                                                        ▲
+                                                        ?
                                                     </button>
                                                     <span className={`font-mono text-sm font-bold mt-1 ${f.upvotes > 0 ? 'text-tarkov-accent' : 'text-gray-500'}`}>
                                                         {f.upvotes}
