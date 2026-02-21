@@ -15,6 +15,11 @@
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-database-compat.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -130,6 +135,22 @@
     <div id="root" class="w-full max-w-[1440px] z-10"></div>
 
     <script type="text/babel">
+        // --- Firebase Initialization ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqm7tqH_x784QDz6z8F8TGZhMU93_qov8",
+            authDomain: "tarkov-calculator.firebaseapp.com",
+            projectId: "tarkov-calculator",
+            storageBucket: "tarkov-calculator.firebasestorage.app",
+            messagingSenderId: "359046359535",
+            appId: "1:359046359535:web:dc4fd248689cbd4e502e1a",
+            measurementId: "G-48EJK2D3RD",
+            databaseURL: "https://tarkov-calculator-default-rtdb.firebaseio.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const { useState, useEffect, useMemo, useRef } = React;
+
         // ==========================================
         // DATA LAYER
         // ==========================================
@@ -369,7 +390,6 @@
         // UI COMPONENTS
         // ==========================================
 
-        const { useState, useMemo, useEffect } = React;
 
         // Helper to clean up API caliber names
         const normalizeCaliber = (rawCaliber) => {
@@ -402,10 +422,13 @@
             const [loading, setLoading] = useState(true);
             const [selectedAmmo, setSelectedAmmo] = useState(INITIAL_AMMO_DATA.find(a => a.id === "545_bs") || INITIAL_AMMO_DATA[0]);
 
+            // Feedback State
+            const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
             // Defense State
-            const [armorData, setArmorData] = useState([{"id":"6B2_body_armor__Flora_","name":"6B2 body armor (Flora)","class":2,"maxDurability":128,"material":"Titan"},{"id":"BNTI_Module_3M_body_armor","name":"BNTI Module-3M body armor","class":2,"maxDurability":80,"material":"Aramid"},{"id":"PACA_Soft_Armor","name":"PACA Soft Armor","class":2,"maxDurability":100,"material":"Aramid"},{"id":"PACA_Soft_Armor__Rivals_Edition_","name":"PACA Soft Armor (Rivals Edition)","class":2,"maxDurability":100,"material":"Aramid"},{"id":"Interceptor_OTV_body_armor__UCP_","name":"Interceptor OTV body armor (UCP)","class":4,"maxDurability":132,"material":"Aramid"},{"id":"Interceptor_OTV_body_armor__Woodland_","name":"Interceptor OTV body armor (Woodland)","class":4,"maxDurability":132,"material":"Aramid"},{"id":"BNTI_Zhuk_body_armor__Press_","name":"BNTI Zhuk body armor (Press)","class":3,"maxDurability":110,"material":"Aramid"},{"id":"BNTI_Kirasa_N_body_armor","name":"BNTI Kirasa-N body armor","class":3,"maxDurability":150,"material":"Aramid"},{"id":"BNTI_Kirasa_N_body_armor__Green_","name":"BNTI Kirasa-N body armor (Green)","class":3,"maxDurability":150,"material":"Aramid"},{"id":"6B13_assault_armor__Flora_","name":"6B13 assault armor (Flora)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"6B13_assault_armor__EMR_","name":"6B13 assault armor (EMR)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"6B23_1_body_armor__EMR_","name":"6B23-1 body armor (EMR)","class":3,"maxDurability":156,"material":"Aramid"},{"id":"6B23_2_body_armor__Mountain_Flora_","name":"6B23-2 body armor (Mountain Flora)","class":4,"maxDurability":156,"material":"Aramid"},{"id":"NPP_KlASS_Korund_VM_body_armor__Black_","name":"NPP KlASS Korund-VM body armor (Black)","class":5,"maxDurability":160,"material":"Aramid"},{"id":"NPP_KlASS_Korund_VM_body_armor__Kamysh_","name":"NPP KlASS Korund-VM body armor (Kamysh)","class":5,"maxDurability":160,"material":"Aramid"},{"id":"LBT_6094A_Slick_Plate_Carrier__Black_","name":"LBT-6094A Slick Plate Carrier (Black)","class":6,"maxDurability":100,"material":"Aramid"},{"id":"LBT_6094A_Slick_Plate_Carrier__Olive_Drab_","name":"LBT-6094A Slick Plate Carrier (Olive Drab)","class":6,"maxDurability":100,"material":"Aramid"},{"id":"LBT_6094A_Slick_Plate_Carrier__Coyote_Tan_","name":"LBT-6094A Slick Plate Carrier (Coyote Tan)","class":6,"maxDurability":100,"material":"Aramid"},{"id":"HighCom_Trooper_TFO_body_armor__MultiCam_","name":"HighCom Trooper TFO body armor (MultiCam)","class":4,"maxDurability":100,"material":"Aramid"},{"id":"HighCom_Trooper_TFO_body_armor__Coyote_","name":"HighCom Trooper TFO body armor (Coyote)","class":4,"maxDurability":100,"material":"Aramid"},{"id":"NPP_KlASS_Kora_Kulon_body_armor__Black_","name":"NPP KlASS Kora-Kulon body armor (Black)","class":3,"maxDurability":128,"material":"Armor steel"},{"id":"NPP_KlASS_Kora_Kulon_body_armor__EMR_","name":"NPP KlASS Kora-Kulon body armor (EMR)","class":3,"maxDurability":128,"material":"Armor steel"},{"id":"NFM_THOR_Concealable_Reinforced_Vest_body_armor","name":"NFM THOR Concealable Reinforced Vest body armor","class":4,"maxDurability":70,"material":"Aramid"},{"id":"NFM_THOR_Concealable_Reinforced_Vest_body_armor__Head_Eyes_","name":"NFM THOR Concealable Reinforced Vest body armor (Head Eyes)","class":4,"maxDurability":70,"material":"Aramid"},{"id":"MF_UNTAR_body_armor","name":"MF-UNTAR body armor","class":3,"maxDurability":100,"material":"Aluminium"},{"id":"DRD_body_armor","name":"DRD body armor","class":3,"maxDurability":120,"material":"Aramid"},{"id":"BNTI_Gzhel_K_body_armor","name":"BNTI Gzhel-K body armor","class":5,"maxDurability":154,"material":"Aramid"},{"id":"BNTI_Zhuk_body_armor__EMR_","name":"BNTI Zhuk body armor (EMR)","class":6,"maxDurability":165,"material":"Aramid"},{"id":"FORT_Defender_2_body_armor","name":"FORT Defender-2 body armor","class":5,"maxDurability":210,"material":"Aramid"},{"id":"6B45_body_armor__EMR_","name":"6B45 body armor (EMR)","class":5,"maxDurability":254,"material":"Aramid"},{"id":"6B13_M_assault_armor__Killa_Edition_","name":"6B13 M assault armor (Killa Edition)","class":5,"maxDurability":154,"material":"Aramid"},{"id":"IOTV_Gen4_body_armor__Assault_Kit__MultiCam_","name":"IOTV Gen4 body armor (Assault Kit, MultiCam)","class":5,"maxDurability":212,"material":"Aramid"},{"id":"IOTV_Gen4_body_armor__High_Mobility_Kit__MultiCam_","name":"IOTV Gen4 body armor (High Mobility Kit, MultiCam)","class":5,"maxDurability":200,"material":"Aramid"},{"id":"FORT_Redut_M_body_armor","name":"FORT Redut-M body armor","class":5,"maxDurability":248,"material":"Aramid"},{"id":"FORT_Redut_M_body_armor__SK_Woodland_","name":"FORT Redut-M body armor (SK Woodland)","class":5,"maxDurability":248,"material":"Aramid"},{"id":"NFM_THOR_Integrated_Carrier_body_armor","name":"NFM THOR Integrated Carrier body armor","class":6,"maxDurability":310,"material":"Aramid"},{"id":"6B43_Zabralo_Sh_body_armor__EMR_","name":"6B43 Zabralo-Sh body armor (EMR)","class":6,"maxDurability":350,"material":"Aramid"},{"id":"IOTV_Gen4_body_armor__Full_Protection_Kit__MultiCam_","name":"IOTV Gen4 body armor (Full Protection Kit, MultiCam)","class":5,"maxDurability":248,"material":"Aramid"},{"id":"FORT_Redut_T5_body_armor__Smog_","name":"FORT Redut-T5 body armor (Smog)","class":6,"maxDurability":354,"material":"Aramid"}]);
-            const [helmetData, setHelmetData] = useState([{"id":"Bomber_beanie","name":"Bomber beanie","class":1,"maxDurability":150,"material":"Aramid"},{"id":"Tac_Kek_FAST_MT_helmet__Replica_","name":"Tac-Kek FAST MT helmet (Replica)","class":1,"maxDurability":48,"material":"UHMWPE"},{"id":"TSh_4M_L_soft_tank_crew_helmet","name":"TSh-4M-L soft tank crew helmet","class":1,"maxDurability":105,"material":"Aramid"},{"id":"Kolpak_1S_riot_helmet","name":"Kolpak-1S riot helmet","class":2,"maxDurability":45,"material":"Aramid"},{"id":"Jack_o__lantern_tactical_pumpkin_helmet","name":"Jack-o\u0027-lantern tactical pumpkin helmet","class":2,"maxDurability":40,"material":"UHMWPE"},{"id":"LShZ_lightweight_helmet__Olive_Drab_","name":"LShZ lightweight helmet (Olive Drab)","class":3,"maxDurability":36,"material":"Aramid"},{"id":"Galvion_Caiman_Hybrid_helmet__Grey_","name":"Galvion Caiman Hybrid helmet (Grey)","class":3,"maxDurability":60,"material":"Combined materials"},{"id":"Galvion_Caiman_Hybrid_helmet__MultiCam_","name":"Galvion Caiman Hybrid helmet (MultiCam)","class":3,"maxDurability":60,"material":"Combined materials"},{"id":"Galvion_Caiman_Hybrid_helmet__Mutualist_","name":"Galvion Caiman Hybrid helmet (Mutualist)","class":3,"maxDurability":60,"material":"Combined materials"},{"id":"Galvion_Caiman_Hybrid_helmet__MultiCam_Alpine_","name":"Galvion Caiman Hybrid helmet (MultiCam Alpine)","class":3,"maxDurability":60,"material":"Combined materials"},{"id":"NFM_HJELM_helmet__Hellhound_Grey_","name":"NFM HJELM helmet (Hellhound Grey)","class":3,"maxDurability":78,"material":"Combined materials"},{"id":"UNTAR_helmet","name":"UNTAR helmet","class":3,"maxDurability":45,"material":"Aramid"},{"id":"6B47_Ratnik_BSh_helmet__Olive_Drab_","name":"6B47 Ratnik-BSh helmet (Olive Drab)","class":3,"maxDurability":45,"material":"Aramid"},{"id":"6B47_Ratnik_BSh_helmet__EMR_cover_","name":"6B47 Ratnik-BSh helmet (EMR cover)","class":3,"maxDurability":45,"material":"Aramid"},{"id":"6B47_Ratnik_BSh_helmet__EMR_Arctic_cover_","name":"6B47 Ratnik-BSh helmet (EMR Arctic cover)","class":3,"maxDurability":45,"material":"Aramid"},{"id":"SSh_68_steel_helmet__Olive_Drab_","name":"SSh-68 steel helmet (Olive Drab)","class":3,"maxDurability":54,"material":"Armor steel"},{"id":"FORT_Kiver_M_bulletproof_helmet","name":"FORT Kiver-M bulletproof helmet","class":3,"maxDurability":63,"material":"UHMWPE"},{"id":"NPP_KlASS_Tor_2_helmet__Olive_Drab_","name":"NPP KlASS Tor-2 helmet (Olive Drab)","class":3,"maxDurability":81,"material":"Combined materials"},{"id":"SSSh_94_SFERA_S_helmet","name":"SSSh-94 SFERA-S helmet","class":3,"maxDurability":135,"material":"Armor steel"},{"id":"DevTac_Ronin_ballistic_helmet","name":"DevTac Ronin ballistic helmet","class":3,"maxDurability":180,"material":"Combined materials"},{"id":"MSA_ACH_TC_2001_MICH_Series_helmet__Olive_Drab_","name":"MSA ACH TC-2001 MICH Series helmet (Olive Drab)","class":4,"maxDurability":30,"material":"Combined materials"},{"id":"MSA_ACH_TC_2002_MICH_Series_helmet__Olive_Drab_","name":"MSA ACH TC-2002 MICH Series helmet (Olive Drab)","class":4,"maxDurability":32,"material":"Combined materials"},{"id":"HighCom_Striker_ACHHC_IIIA_helmet__Black_","name":"HighCom Striker ACHHC IIIA helmet (Black)","class":4,"maxDurability":36,"material":"Combined materials"},{"id":"HighCom_Striker_ACHHC_IIIA_helmet__Olive_Drab_","name":"HighCom Striker ACHHC IIIA helmet (Olive Drab)","class":4,"maxDurability":36,"material":"Combined materials"},{"id":"MSA_Gallet_TC_800_High_Cut_combat_helmet__Black_","name":"MSA Gallet TC 800 High Cut combat helmet (Black)","class":4,"maxDurability":36,"material":"Combined materials"},{"id":"MTEK_STRIKE_Ballistic_helmet__Coyote_","name":"MTEK STRIKE Ballistic helmet (Coyote)","class":4,"maxDurability":40,"material":"Combined materials"},{"id":"MTEK_STRIKE_Ballistic_helmet__Coyote_MultiCam_Arid_","name":"MTEK STRIKE Ballistic helmet (Coyote/MultiCam Arid)","class":4,"maxDurability":40,"material":"Combined materials"},{"id":"Diamond_Age_Bastion_helmet__Black_","name":"Diamond Age Bastion helmet (Black)","class":4,"maxDurability":48,"material":"Combined materials"},{"id":"Ops_Core_FAST_MT_Super_High_Cut_helmet__Black_","name":"Ops-Core FAST MT Super High Cut helmet (Black)","class":4,"maxDurability":48,"material":"Combined materials"},{"id":"Ops_Core_FAST_MT_Super_High_Cut_helmet__Urban_Tan_","name":"Ops-Core FAST MT Super High Cut helmet (Urban Tan)","class":4,"maxDurability":48,"material":"Combined materials"},{"id":"Crye_Precision_AirFrame_helmet__Tan_","name":"Crye Precision AirFrame helmet (Tan)","class":4,"maxDurability":48,"material":"Combined materials"},{"id":"Ballistic_Armor_Co__Bastion_helmet__Armor_Black_","name":"Ballistic Armor Co. Bastion helmet (Armor Black)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"Ballistic_Armor_Co__Bastion_helmet__OD_Green_","name":"Ballistic Armor Co. Bastion helmet (OD Green)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"Ballistic_Armor_Co__Bastion_helmet__MultiCam_","name":"Ballistic Armor Co. Bastion helmet (MultiCam)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"MTEK_FLUX_Ballistic_helmet__Olive_Drab_","name":"MTEK FLUX Ballistic helmet (Olive Drab)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"MTEK_FLUX_Ballistic_helmet__MultiCam_Alpine_","name":"MTEK FLUX Ballistic helmet (MultiCam Alpine)","class":4,"maxDurability":50,"material":"Combined materials"},{"id":"Team_Wendy_EXFIL_Ballistic_Helmet__Black_","name":"Team Wendy EXFIL Ballistic Helmet (Black)","class":4,"maxDurability":54,"material":"Combined materials"},{"id":"Team_Wendy_EXFIL_Ballistic_Helmet__Coyote_Brown_","name":"Team Wendy EXFIL Ballistic Helmet (Coyote Brown)","class":4,"maxDurability":54,"material":"Combined materials"},{"id":"Diamond_Age_NeoSteel_High_Cut_helmet__Black_","name":"Diamond Age NeoSteel High Cut helmet (Black)","class":4,"maxDurability":72,"material":"Armor steel"},{"id":"Diamond_Age_NeoSteel_High_Cut_helmet__Aces_","name":"Diamond Age NeoSteel High Cut helmet (Aces)","class":4,"maxDurability":72,"material":"Armor steel"},{"id":"Diamond_Age_NeoSteel_High_Cut_helmet__Orange_Stains_","name":"Diamond Age NeoSteel High Cut helmet (Orange Stains)","class":4,"maxDurability":72,"material":"Armor steel"},{"id":"ZSh_1_2M_helmet__Black_cover_","name":"ZSh-1-2M helmet (Black cover)","class":4,"maxDurability":63,"material":"Combined materials"},{"id":"ZSh_1_2M_helmet__Olive_Drab_","name":"ZSh-1-2M helmet (Olive Drab)","class":4,"maxDurability":63,"material":"Combined materials"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Black_","name":"HighCom Striker ULACH IIIA helmet (Black)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Desert_Tan_","name":"HighCom Striker ULACH IIIA helmet (Desert Tan)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Coyote_Stripes_","name":"HighCom Striker ULACH IIIA helmet (Coyote Stripes)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Sand_","name":"HighCom Striker ULACH IIIA helmet (Sand)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Green_Stripes_","name":"HighCom Striker ULACH IIIA helmet (Green Stripes)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Mesh_Spray_","name":"HighCom Striker ULACH IIIA helmet (Mesh Spray)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"HighCom_Striker_ULACH_IIIA_helmet__Winter_Mesh_Spray_","name":"HighCom Striker ULACH IIIA helmet (Winter Mesh Spray)","class":4,"maxDurability":66,"material":"UHMWPE"},{"id":"BNTI_LShZ_2DTM_helmet__Black_","name":"BNTI LShZ-2DTM helmet (Black)","class":4,"maxDurability":99,"material":"Combined materials"},{"id":"Maska_1SCh_bulletproof_helmet__Olive_Drab_","name":"Maska-1SCh bulletproof helmet (Olive Drab)","class":4,"maxDurability":108,"material":"Armor steel"},{"id":"Maska_1SCh_bulletproof_helmet__Killa_Edition_","name":"Maska-1SCh bulletproof helmet (Killa Edition)","class":4,"maxDurability":108,"material":"Armor steel"},{"id":"DevTac_Ronin_Respirator","name":"DevTac Ronin Respirator","class":4,"maxDurability":180,"material":"Combined materials"},{"id":"DevTac_Ronin_Respirator__Eternal_Green_","name":"DevTac Ronin Respirator (Eternal Green)","class":4,"maxDurability":180,"material":"Combined materials"},{"id":"DevTac_Ronin_Respirator__Beast_","name":"DevTac Ronin Respirator (Beast)","class":4,"maxDurability":180,"material":"Combined materials"},{"id":"Vulkan_5_LShZ_5_bulletproof_helmet__Black_","name":"Vulkan-5 LShZ-5 bulletproof helmet (Black)","class":5,"maxDurability":75,"material":"Combined materials"},{"id":"Vulkan_5_LShZ_5_bulletproof_helmet__Camouflage_","name":"Vulkan-5 LShZ-5 bulletproof helmet (Camouflage)","class":5,"maxDurability":75,"material":"Combined materials"},{"id":"Vulkan_5_LShZ_5_bulletproof_helmet__Flame_","name":"Vulkan-5 LShZ-5 bulletproof helmet (Flame)","class":5,"maxDurability":75,"material":"Combined materials"},{"id":"Vulkan_5_LShZ_5_bulletproof_helmet__Eight_ball_","name":"Vulkan-5 LShZ-5 bulletproof helmet (Eight-ball)","class":5,"maxDurability":75,"material":"Combined materials"},{"id":"Altyn_bulletproof_helmet__Olive_Drab_","name":"Altyn bulletproof helmet (Olive Drab)","class":5,"maxDurability":81,"material":"Armor steel"},{"id":"Rys_T_bulletproof_helmet__Black_","name":"Rys-T bulletproof helmet (Black)","class":5,"maxDurability":90,"material":"Titan"}]);
-            const [rigData, setRigData] = useState([{"id":"Tac_Kek_JayPC_plate_carrier__Black_","name":"Tac-Kek JayPC plate carrier (Black)","class":1,"maxDurability":13,"material":"-"},{"id":"Tac_Kek_JayPC_plate_carrier__OD_Green_","name":"Tac-Kek JayPC plate carrier (OD Green)","class":1,"maxDurability":15,"material":"-"},{"id":"Eagle_Allied_Industries_MBSS_plate_carrier__Coyote_Brown_","name":"Eagle Allied Industries MBSS plate carrier (Coyote Brown)","class":3,"maxDurability":12,"material":"-"},{"id":"Crye_Precision_JPC_Plate_Carrier__MultiCam_","name":"Crye Precision JPC Plate Carrier (MultiCam)","class":5,"maxDurability":24,"material":"-"},{"id":"Tasmanian_Tiger_Plate_Carrier_MKIII__Coyote_Brown_","name":"Tasmanian Tiger Plate Carrier MKIII (Coyote Brown)","class":5,"maxDurability":15,"material":"-"},{"id":"S_S_Precision_PlateFrame_plate_carrier__Goons_Edition_","name":"S\u0026S Precision PlateFrame plate carrier (Goons Edition)","class":5,"maxDurability":10,"material":"-"},{"id":"WARTECH_TV_115_plate_carrier__Olive_Drab_","name":"WARTECH TV-115 plate carrier (Olive Drab)","class":3,"maxDurability":52,"material":"Aramid"},{"id":"WARTECH_TV_110_plate_carrier__Coyote_","name":"WARTECH TV-110 plate carrier (Coyote)","class":4,"maxDurability":70,"material":"Aramid"},{"id":"Eagle_Industries_MMAC_plate_carrier__Ranger_Green_","name":"Eagle Industries MMAC plate carrier (Ranger Green)","class":4,"maxDurability":64,"material":"Aramid"},{"id":"Shellback_Tactical_Banshee_plate_carrier__A_TACS_AU_","name":"Shellback Tactical Banshee plate carrier (A-TACS AU)","class":4,"maxDurability":72,"material":"Aramid"},{"id":"Ars_Arma_A18_Skanda_plate_carrier__MultiCam_","name":"Ars Arma A18 Skanda plate carrier (MultiCam)","class":4,"maxDurability":86,"material":"Aramid"},{"id":"ANA_Tactical_M1_plate_carrier__OD_Green_","name":"ANA Tactical M1 plate carrier (OD Green)","class":4,"maxDurability":104,"material":"Aramid"},{"id":"First_Spear_Strandhogg_plate_carrier__Ranger_Green_","name":"First Spear Strandhogg plate carrier (Ranger Green)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"First_Spear_Strandhogg_plate_carrier__ABUPAT_","name":"First Spear Strandhogg plate carrier (ABUPAT)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"ECLiPSE_RBAV_AF_plate_carrier__Ranger_Green_","name":"ECLiPSE RBAV-AF plate carrier (Ranger Green)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"Stich_Profi_Plate_Carrier_V2__Black_","name":"Stich Profi Plate Carrier V2 (Black)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"Stich_Profi_Plate_Carrier_V2__MARPAT_Woodland_","name":"Stich Profi Plate Carrier V2 (MARPAT Woodland)","class":4,"maxDurability":108,"material":"Aramid"},{"id":"CQC_Osprey_MK4A_plate_carrier__Assault__MTP_","name":"CQC Osprey MK4A plate carrier (Assault, MTP)","class":4,"maxDurability":132,"material":"Aramid"},{"id":"Crye_Precision_AVS_plate_carrier__Tagilla_Edition_","name":"Crye Precision AVS plate carrier (Tagilla Edition)","class":6,"maxDurability":60,"material":"Aramid"},{"id":"5_11_Tactical_TacTec_plate_carrier__Ranger_Green_","name":"5.11 Tactical TacTec plate carrier (Ranger Green)","class":5,"maxDurability":80,"material":"Aramid"},{"id":"5_11_Tactical_TacTec_plate_carrier__Storm_","name":"5.11 Tactical TacTec plate carrier (Storm)","class":5,"maxDurability":80,"material":"Aramid"},{"id":"Crye_Precision_CPC_plate_carrier__Goons_Edition_","name":"Crye Precision CPC plate carrier (Goons Edition)","class":5,"maxDurability":90,"material":"Aramid"},{"id":"Ars_Arma_CPC_MOD_1_plate_carrier__A_TACS_FG_","name":"Ars Arma CPC MOD.1 plate carrier (A-TACS FG)","class":5,"maxDurability":120,"material":"Aramid"},{"id":"Stich_Profi_Stich_Defense_mod_2_plate_carrier__MultiCam_","name":"Stich Profi Stich Defense mod.2 plate carrier (MultiCam)","class":6,"maxDurability":130,"material":"Aramid"},{"id":"ANA_Tactical_M2_plate_carrier__OD_Green_","name":"ANA Tactical M2 plate carrier (OD Green)","class":4,"maxDurability":96,"material":"Aramid"},{"id":"ANA_Tactical_M2_plate_carrier__MultiCam_Alpine_","name":"ANA Tactical M2 plate carrier (MultiCam Alpine)","class":4,"maxDurability":96,"material":"Aramid"},{"id":"Crye_Precision_AVS_plate_carrier__Ranger_Green_","name":"Crye Precision AVS plate carrier (Ranger Green)","class":4,"maxDurability":112,"material":"Aramid"},{"id":"Crye_Precision_AVS_plate_carrier__MultiCam_","name":"Crye Precision AVS plate carrier (MultiCam)","class":4,"maxDurability":112,"material":"Aramid"},{"id":"NPP_KlASS_Bagariy_plate_carrier__EMR_","name":"NPP KlASS Bagariy plate carrier (EMR)","class":5,"maxDurability":132,"material":"Aramid"},{"id":"6B5_16_Zh_86_Uley_armored_rig__Khaki_","name":"6B5-16 Zh-86 Uley armored rig (Khaki)","class":2,"maxDurability":160,"material":"TitanAramid"},{"id":"6B45_armored_rig__General_Purpose__EMR_","name":"6B45 armored rig (General Purpose, EMR)","class":5,"maxDurability":254,"material":"Aramid"},{"id":"6B45_armored_rig__Medic__EMR_","name":"6B45 armored rig (Medic, EMR)","class":5,"maxDurability":254,"material":"Aramid"},{"id":"6B45_armored_rig__Assault__EMR_","name":"6B45 armored rig (Assault, EMR)","class":6,"maxDurability":254,"material":"Aramid"},{"id":"CQC_Osprey_MK4A_plate_carrier__Protection__MTP_","name":"CQC Osprey MK4A plate carrier (Protection, MTP)","class":5,"maxDurability":132,"material":"Aramid"},{"id":"6B3TM_01_armored_rig__Khaki_","name":"6B3TM-01 armored rig (Khaki)","class":2,"maxDurability":86,"material":"Titan"},{"id":"6B5_15_Zh_86_Uley_armored_rig__Flora_","name":"6B5-15 Zh-86 Uley armored rig (Flora)","class":4,"maxDurability":110,"material":"CeramicAramid"}]);
+            const [armorData, setArmorData] = useState([{ "id": "6B2_body_armor__Flora_", "name": "6B2 body armor (Flora)", "class": 2, "maxDurability": 128, "material": "Titan" }, { "id": "BNTI_Module_3M_body_armor", "name": "BNTI Module-3M body armor", "class": 2, "maxDurability": 80, "material": "Aramid" }, { "id": "PACA_Soft_Armor", "name": "PACA Soft Armor", "class": 2, "maxDurability": 100, "material": "Aramid" }, { "id": "PACA_Soft_Armor__Rivals_Edition_", "name": "PACA Soft Armor (Rivals Edition)", "class": 2, "maxDurability": 100, "material": "Aramid" }, { "id": "Interceptor_OTV_body_armor__UCP_", "name": "Interceptor OTV body armor (UCP)", "class": 4, "maxDurability": 132, "material": "Aramid" }, { "id": "Interceptor_OTV_body_armor__Woodland_", "name": "Interceptor OTV body armor (Woodland)", "class": 4, "maxDurability": 132, "material": "Aramid" }, { "id": "BNTI_Zhuk_body_armor__Press_", "name": "BNTI Zhuk body armor (Press)", "class": 3, "maxDurability": 110, "material": "Aramid" }, { "id": "BNTI_Kirasa_N_body_armor", "name": "BNTI Kirasa-N body armor", "class": 3, "maxDurability": 150, "material": "Aramid" }, { "id": "BNTI_Kirasa_N_body_armor__Green_", "name": "BNTI Kirasa-N body armor (Green)", "class": 3, "maxDurability": 150, "material": "Aramid" }, { "id": "6B13_assault_armor__Flora_", "name": "6B13 assault armor (Flora)", "class": 4, "maxDurability": 108, "material": "Aramid" }, { "id": "6B13_assault_armor__EMR_", "name": "6B13 assault armor (EMR)", "class": 4, "maxDurability": 108, "material": "Aramid" }, { "id": "6B23_1_body_armor__EMR_", "name": "6B23-1 body armor (EMR)", "class": 3, "maxDurability": 156, "material": "Aramid" }, { "id": "6B23_2_body_armor__Mountain_Flora_", "name": "6B23-2 body armor (Mountain Flora)", "class": 4, "maxDurability": 156, "material": "Aramid" }, { "id": "NPP_KlASS_Korund_VM_body_armor__Black_", "name": "NPP KlASS Korund-VM body armor (Black)", "class": 5, "maxDurability": 160, "material": "Aramid" }, { "id": "NPP_KlASS_Korund_VM_body_armor__Kamysh_", "name": "NPP KlASS Korund-VM body armor (Kamysh)", "class": 5, "maxDurability": 160, "material": "Aramid" }, { "id": "LBT_6094A_Slick_Plate_Carrier__Black_", "name": "LBT-6094A Slick Plate Carrier (Black)", "class": 6, "maxDurability": 100, "material": "Aramid" }, { "id": "LBT_6094A_Slick_Plate_Carrier__Olive_Drab_", "name": "LBT-6094A Slick Plate Carrier (Olive Drab)", "class": 6, "maxDurability": 100, "material": "Aramid" }, { "id": "LBT_6094A_Slick_Plate_Carrier__Coyote_Tan_", "name": "LBT-6094A Slick Plate Carrier (Coyote Tan)", "class": 6, "maxDurability": 100, "material": "Aramid" }, { "id": "HighCom_Trooper_TFO_body_armor__MultiCam_", "name": "HighCom Trooper TFO body armor (MultiCam)", "class": 4, "maxDurability": 100, "material": "Aramid" }, { "id": "HighCom_Trooper_TFO_body_armor__Coyote_", "name": "HighCom Trooper TFO body armor (Coyote)", "class": 4, "maxDurability": 100, "material": "Aramid" }, { "id": "NPP_KlASS_Kora_Kulon_body_armor__Black_", "name": "NPP KlASS Kora-Kulon body armor (Black)", "class": 3, "maxDurability": 128, "material": "Armor steel" }, { "id": "NPP_KlASS_Kora_Kulon_body_armor__EMR_", "name": "NPP KlASS Kora-Kulon body armor (EMR)", "class": 3, "maxDurability": 128, "material": "Armor steel" }, { "id": "NFM_THOR_Concealable_Reinforced_Vest_body_armor", "name": "NFM THOR Concealable Reinforced Vest body armor", "class": 4, "maxDurability": 70, "material": "Aramid" }, { "id": "NFM_THOR_Concealable_Reinforced_Vest_body_armor__Head_Eyes_", "name": "NFM THOR Concealable Reinforced Vest body armor (Head Eyes)", "class": 4, "maxDurability": 70, "material": "Aramid" }, { "id": "MF_UNTAR_body_armor", "name": "MF-UNTAR body armor", "class": 3, "maxDurability": 100, "material": "Aluminium" }, { "id": "DRD_body_armor", "name": "DRD body armor", "class": 3, "maxDurability": 120, "material": "Aramid" }, { "id": "BNTI_Gzhel_K_body_armor", "name": "BNTI Gzhel-K body armor", "class": 5, "maxDurability": 154, "material": "Aramid" }, { "id": "BNTI_Zhuk_body_armor__EMR_", "name": "BNTI Zhuk body armor (EMR)", "class": 6, "maxDurability": 165, "material": "Aramid" }, { "id": "FORT_Defender_2_body_armor", "name": "FORT Defender-2 body armor", "class": 5, "maxDurability": 210, "material": "Aramid" }, { "id": "6B45_body_armor__EMR_", "name": "6B45 body armor (EMR)", "class": 5, "maxDurability": 254, "material": "Aramid" }, { "id": "6B13_M_assault_armor__Killa_Edition_", "name": "6B13 M assault armor (Killa Edition)", "class": 5, "maxDurability": 154, "material": "Aramid" }, { "id": "IOTV_Gen4_body_armor__Assault_Kit__MultiCam_", "name": "IOTV Gen4 body armor (Assault Kit, MultiCam)", "class": 5, "maxDurability": 212, "material": "Aramid" }, { "id": "IOTV_Gen4_body_armor__High_Mobility_Kit__MultiCam_", "name": "IOTV Gen4 body armor (High Mobility Kit, MultiCam)", "class": 5, "maxDurability": 200, "material": "Aramid" }, { "id": "FORT_Redut_M_body_armor", "name": "FORT Redut-M body armor", "class": 5, "maxDurability": 248, "material": "Aramid" }, { "id": "FORT_Redut_M_body_armor__SK_Woodland_", "name": "FORT Redut-M body armor (SK Woodland)", "class": 5, "maxDurability": 248, "material": "Aramid" }, { "id": "NFM_THOR_Integrated_Carrier_body_armor", "name": "NFM THOR Integrated Carrier body armor", "class": 6, "maxDurability": 310, "material": "Aramid" }, { "id": "6B43_Zabralo_Sh_body_armor__EMR_", "name": "6B43 Zabralo-Sh body armor (EMR)", "class": 6, "maxDurability": 350, "material": "Aramid" }, { "id": "IOTV_Gen4_body_armor__Full_Protection_Kit__MultiCam_", "name": "IOTV Gen4 body armor (Full Protection Kit, MultiCam)", "class": 5, "maxDurability": 248, "material": "Aramid" }, { "id": "FORT_Redut_T5_body_armor__Smog_", "name": "FORT Redut-T5 body armor (Smog)", "class": 6, "maxDurability": 354, "material": "Aramid" }]);
+            const [helmetData, setHelmetData] = useState([{ "id": "Bomber_beanie", "name": "Bomber beanie", "class": 1, "maxDurability": 150, "material": "Aramid" }, { "id": "Tac_Kek_FAST_MT_helmet__Replica_", "name": "Tac-Kek FAST MT helmet (Replica)", "class": 1, "maxDurability": 48, "material": "UHMWPE" }, { "id": "TSh_4M_L_soft_tank_crew_helmet", "name": "TSh-4M-L soft tank crew helmet", "class": 1, "maxDurability": 105, "material": "Aramid" }, { "id": "Kolpak_1S_riot_helmet", "name": "Kolpak-1S riot helmet", "class": 2, "maxDurability": 45, "material": "Aramid" }, { "id": "Jack_o__lantern_tactical_pumpkin_helmet", "name": "Jack-o\u0027-lantern tactical pumpkin helmet", "class": 2, "maxDurability": 40, "material": "UHMWPE" }, { "id": "LShZ_lightweight_helmet__Olive_Drab_", "name": "LShZ lightweight helmet (Olive Drab)", "class": 3, "maxDurability": 36, "material": "Aramid" }, { "id": "Galvion_Caiman_Hybrid_helmet__Grey_", "name": "Galvion Caiman Hybrid helmet (Grey)", "class": 3, "maxDurability": 60, "material": "Combined materials" }, { "id": "Galvion_Caiman_Hybrid_helmet__MultiCam_", "name": "Galvion Caiman Hybrid helmet (MultiCam)", "class": 3, "maxDurability": 60, "material": "Combined materials" }, { "id": "Galvion_Caiman_Hybrid_helmet__Mutualist_", "name": "Galvion Caiman Hybrid helmet (Mutualist)", "class": 3, "maxDurability": 60, "material": "Combined materials" }, { "id": "Galvion_Caiman_Hybrid_helmet__MultiCam_Alpine_", "name": "Galvion Caiman Hybrid helmet (MultiCam Alpine)", "class": 3, "maxDurability": 60, "material": "Combined materials" }, { "id": "NFM_HJELM_helmet__Hellhound_Grey_", "name": "NFM HJELM helmet (Hellhound Grey)", "class": 3, "maxDurability": 78, "material": "Combined materials" }, { "id": "UNTAR_helmet", "name": "UNTAR helmet", "class": 3, "maxDurability": 45, "material": "Aramid" }, { "id": "6B47_Ratnik_BSh_helmet__Olive_Drab_", "name": "6B47 Ratnik-BSh helmet (Olive Drab)", "class": 3, "maxDurability": 45, "material": "Aramid" }, { "id": "6B47_Ratnik_BSh_helmet__EMR_cover_", "name": "6B47 Ratnik-BSh helmet (EMR cover)", "class": 3, "maxDurability": 45, "material": "Aramid" }, { "id": "6B47_Ratnik_BSh_helmet__EMR_Arctic_cover_", "name": "6B47 Ratnik-BSh helmet (EMR Arctic cover)", "class": 3, "maxDurability": 45, "material": "Aramid" }, { "id": "SSh_68_steel_helmet__Olive_Drab_", "name": "SSh-68 steel helmet (Olive Drab)", "class": 3, "maxDurability": 54, "material": "Armor steel" }, { "id": "FORT_Kiver_M_bulletproof_helmet", "name": "FORT Kiver-M bulletproof helmet", "class": 3, "maxDurability": 63, "material": "UHMWPE" }, { "id": "NPP_KlASS_Tor_2_helmet__Olive_Drab_", "name": "NPP KlASS Tor-2 helmet (Olive Drab)", "class": 3, "maxDurability": 81, "material": "Combined materials" }, { "id": "SSSh_94_SFERA_S_helmet", "name": "SSSh-94 SFERA-S helmet", "class": 3, "maxDurability": 135, "material": "Armor steel" }, { "id": "DevTac_Ronin_ballistic_helmet", "name": "DevTac Ronin ballistic helmet", "class": 3, "maxDurability": 180, "material": "Combined materials" }, { "id": "MSA_ACH_TC_2001_MICH_Series_helmet__Olive_Drab_", "name": "MSA ACH TC-2001 MICH Series helmet (Olive Drab)", "class": 4, "maxDurability": 30, "material": "Combined materials" }, { "id": "MSA_ACH_TC_2002_MICH_Series_helmet__Olive_Drab_", "name": "MSA ACH TC-2002 MICH Series helmet (Olive Drab)", "class": 4, "maxDurability": 32, "material": "Combined materials" }, { "id": "HighCom_Striker_ACHHC_IIIA_helmet__Black_", "name": "HighCom Striker ACHHC IIIA helmet (Black)", "class": 4, "maxDurability": 36, "material": "Combined materials" }, { "id": "HighCom_Striker_ACHHC_IIIA_helmet__Olive_Drab_", "name": "HighCom Striker ACHHC IIIA helmet (Olive Drab)", "class": 4, "maxDurability": 36, "material": "Combined materials" }, { "id": "MSA_Gallet_TC_800_High_Cut_combat_helmet__Black_", "name": "MSA Gallet TC 800 High Cut combat helmet (Black)", "class": 4, "maxDurability": 36, "material": "Combined materials" }, { "id": "MTEK_STRIKE_Ballistic_helmet__Coyote_", "name": "MTEK STRIKE Ballistic helmet (Coyote)", "class": 4, "maxDurability": 40, "material": "Combined materials" }, { "id": "MTEK_STRIKE_Ballistic_helmet__Coyote_MultiCam_Arid_", "name": "MTEK STRIKE Ballistic helmet (Coyote/MultiCam Arid)", "class": 4, "maxDurability": 40, "material": "Combined materials" }, { "id": "Diamond_Age_Bastion_helmet__Black_", "name": "Diamond Age Bastion helmet (Black)", "class": 4, "maxDurability": 48, "material": "Combined materials" }, { "id": "Ops_Core_FAST_MT_Super_High_Cut_helmet__Black_", "name": "Ops-Core FAST MT Super High Cut helmet (Black)", "class": 4, "maxDurability": 48, "material": "Combined materials" }, { "id": "Ops_Core_FAST_MT_Super_High_Cut_helmet__Urban_Tan_", "name": "Ops-Core FAST MT Super High Cut helmet (Urban Tan)", "class": 4, "maxDurability": 48, "material": "Combined materials" }, { "id": "Crye_Precision_AirFrame_helmet__Tan_", "name": "Crye Precision AirFrame helmet (Tan)", "class": 4, "maxDurability": 48, "material": "Combined materials" }, { "id": "Ballistic_Armor_Co__Bastion_helmet__Armor_Black_", "name": "Ballistic Armor Co. Bastion helmet (Armor Black)", "class": 4, "maxDurability": 50, "material": "Combined materials" }, { "id": "Ballistic_Armor_Co__Bastion_helmet__OD_Green_", "name": "Ballistic Armor Co. Bastion helmet (OD Green)", "class": 4, "maxDurability": 50, "material": "Combined materials" }, { "id": "Ballistic_Armor_Co__Bastion_helmet__MultiCam_", "name": "Ballistic Armor Co. Bastion helmet (MultiCam)", "class": 4, "maxDurability": 50, "material": "Combined materials" }, { "id": "MTEK_FLUX_Ballistic_helmet__Olive_Drab_", "name": "MTEK FLUX Ballistic helmet (Olive Drab)", "class": 4, "maxDurability": 50, "material": "Combined materials" }, { "id": "MTEK_FLUX_Ballistic_helmet__MultiCam_Alpine_", "name": "MTEK FLUX Ballistic helmet (MultiCam Alpine)", "class": 4, "maxDurability": 50, "material": "Combined materials" }, { "id": "Team_Wendy_EXFIL_Ballistic_Helmet__Black_", "name": "Team Wendy EXFIL Ballistic Helmet (Black)", "class": 4, "maxDurability": 54, "material": "Combined materials" }, { "id": "Team_Wendy_EXFIL_Ballistic_Helmet__Coyote_Brown_", "name": "Team Wendy EXFIL Ballistic Helmet (Coyote Brown)", "class": 4, "maxDurability": 54, "material": "Combined materials" }, { "id": "Diamond_Age_NeoSteel_High_Cut_helmet__Black_", "name": "Diamond Age NeoSteel High Cut helmet (Black)", "class": 4, "maxDurability": 72, "material": "Armor steel" }, { "id": "Diamond_Age_NeoSteel_High_Cut_helmet__Aces_", "name": "Diamond Age NeoSteel High Cut helmet (Aces)", "class": 4, "maxDurability": 72, "material": "Armor steel" }, { "id": "Diamond_Age_NeoSteel_High_Cut_helmet__Orange_Stains_", "name": "Diamond Age NeoSteel High Cut helmet (Orange Stains)", "class": 4, "maxDurability": 72, "material": "Armor steel" }, { "id": "ZSh_1_2M_helmet__Black_cover_", "name": "ZSh-1-2M helmet (Black cover)", "class": 4, "maxDurability": 63, "material": "Combined materials" }, { "id": "ZSh_1_2M_helmet__Olive_Drab_", "name": "ZSh-1-2M helmet (Olive Drab)", "class": 4, "maxDurability": 63, "material": "Combined materials" }, { "id": "HighCom_Striker_ULACH_IIIA_helmet__Black_", "name": "HighCom Striker ULACH IIIA helmet (Black)", "class": 4, "maxDurability": 66, "material": "UHMWPE" }, { "id": "HighCom_Striker_ULACH_IIIA_helmet__Desert_Tan_", "name": "HighCom Striker ULACH IIIA helmet (Desert Tan)", "class": 4, "maxDurability": 66, "material": "UHMWPE" }, { "id": "HighCom_Striker_ULACH_IIIA_helmet__Coyote_Stripes_", "name": "HighCom Striker ULACH IIIA helmet (Coyote Stripes)", "class": 4, "maxDurability": 66, "material": "UHMWPE" }, { "id": "HighCom_Striker_ULACH_IIIA_helmet__Sand_", "name": "HighCom Striker ULACH IIIA helmet (Sand)", "class": 4, "maxDurability": 66, "material": "UHMWPE" }, { "id": "HighCom_Striker_ULACH_IIIA_helmet__Green_Stripes_", "name": "HighCom Striker ULACH IIIA helmet (Green Stripes)", "class": 4, "maxDurability": 66, "material": "UHMWPE" }, { "id": "HighCom_Striker_ULACH_IIIA_helmet__Mesh_Spray_", "name": "HighCom Striker ULACH IIIA helmet (Mesh Spray)", "class": 4, "maxDurability": 66, "material": "UHMWPE" }, { "id": "HighCom_Striker_ULACH_IIIA_helmet__Winter_Mesh_Spray_", "name": "HighCom Striker ULACH IIIA helmet (Winter Mesh Spray)", "class": 4, "maxDurability": 66, "material": "UHMWPE" }, { "id": "BNTI_LShZ_2DTM_helmet__Black_", "name": "BNTI LShZ-2DTM helmet (Black)", "class": 4, "maxDurability": 99, "material": "Combined materials" }, { "id": "Maska_1SCh_bulletproof_helmet__Olive_Drab_", "name": "Maska-1SCh bulletproof helmet (Olive Drab)", "class": 4, "maxDurability": 108, "material": "Armor steel" }, { "id": "Maska_1SCh_bulletproof_helmet__Killa_Edition_", "name": "Maska-1SCh bulletproof helmet (Killa Edition)", "class": 4, "maxDurability": 108, "material": "Armor steel" }, { "id": "DevTac_Ronin_Respirator", "name": "DevTac Ronin Respirator", "class": 4, "maxDurability": 180, "material": "Combined materials" }, { "id": "DevTac_Ronin_Respirator__Eternal_Green_", "name": "DevTac Ronin Respirator (Eternal Green)", "class": 4, "maxDurability": 180, "material": "Combined materials" }, { "id": "DevTac_Ronin_Respirator__Beast_", "name": "DevTac Ronin Respirator (Beast)", "class": 4, "maxDurability": 180, "material": "Combined materials" }, { "id": "Vulkan_5_LShZ_5_bulletproof_helmet__Black_", "name": "Vulkan-5 LShZ-5 bulletproof helmet (Black)", "class": 5, "maxDurability": 75, "material": "Combined materials" }, { "id": "Vulkan_5_LShZ_5_bulletproof_helmet__Camouflage_", "name": "Vulkan-5 LShZ-5 bulletproof helmet (Camouflage)", "class": 5, "maxDurability": 75, "material": "Combined materials" }, { "id": "Vulkan_5_LShZ_5_bulletproof_helmet__Flame_", "name": "Vulkan-5 LShZ-5 bulletproof helmet (Flame)", "class": 5, "maxDurability": 75, "material": "Combined materials" }, { "id": "Vulkan_5_LShZ_5_bulletproof_helmet__Eight_ball_", "name": "Vulkan-5 LShZ-5 bulletproof helmet (Eight-ball)", "class": 5, "maxDurability": 75, "material": "Combined materials" }, { "id": "Altyn_bulletproof_helmet__Olive_Drab_", "name": "Altyn bulletproof helmet (Olive Drab)", "class": 5, "maxDurability": 81, "material": "Armor steel" }, { "id": "Rys_T_bulletproof_helmet__Black_", "name": "Rys-T bulletproof helmet (Black)", "class": 5, "maxDurability": 90, "material": "Titan" }]);
+            const [rigData, setRigData] = useState([{ "id": "Tac_Kek_JayPC_plate_carrier__Black_", "name": "Tac-Kek JayPC plate carrier (Black)", "class": 1, "maxDurability": 13, "material": "-" }, { "id": "Tac_Kek_JayPC_plate_carrier__OD_Green_", "name": "Tac-Kek JayPC plate carrier (OD Green)", "class": 1, "maxDurability": 15, "material": "-" }, { "id": "Eagle_Allied_Industries_MBSS_plate_carrier__Coyote_Brown_", "name": "Eagle Allied Industries MBSS plate carrier (Coyote Brown)", "class": 3, "maxDurability": 12, "material": "-" }, { "id": "Crye_Precision_JPC_Plate_Carrier__MultiCam_", "name": "Crye Precision JPC Plate Carrier (MultiCam)", "class": 5, "maxDurability": 24, "material": "-" }, { "id": "Tasmanian_Tiger_Plate_Carrier_MKIII__Coyote_Brown_", "name": "Tasmanian Tiger Plate Carrier MKIII (Coyote Brown)", "class": 5, "maxDurability": 15, "material": "-" }, { "id": "S_S_Precision_PlateFrame_plate_carrier__Goons_Edition_", "name": "S\u0026S Precision PlateFrame plate carrier (Goons Edition)", "class": 5, "maxDurability": 10, "material": "-" }, { "id": "WARTECH_TV_115_plate_carrier__Olive_Drab_", "name": "WARTECH TV-115 plate carrier (Olive Drab)", "class": 3, "maxDurability": 52, "material": "Aramid" }, { "id": "WARTECH_TV_110_plate_carrier__Coyote_", "name": "WARTECH TV-110 plate carrier (Coyote)", "class": 4, "maxDurability": 70, "material": "Aramid" }, { "id": "Eagle_Industries_MMAC_plate_carrier__Ranger_Green_", "name": "Eagle Industries MMAC plate carrier (Ranger Green)", "class": 4, "maxDurability": 64, "material": "Aramid" }, { "id": "Shellback_Tactical_Banshee_plate_carrier__A_TACS_AU_", "name": "Shellback Tactical Banshee plate carrier (A-TACS AU)", "class": 4, "maxDurability": 72, "material": "Aramid" }, { "id": "Ars_Arma_A18_Skanda_plate_carrier__MultiCam_", "name": "Ars Arma A18 Skanda plate carrier (MultiCam)", "class": 4, "maxDurability": 86, "material": "Aramid" }, { "id": "ANA_Tactical_M1_plate_carrier__OD_Green_", "name": "ANA Tactical M1 plate carrier (OD Green)", "class": 4, "maxDurability": 104, "material": "Aramid" }, { "id": "First_Spear_Strandhogg_plate_carrier__Ranger_Green_", "name": "First Spear Strandhogg plate carrier (Ranger Green)", "class": 4, "maxDurability": 108, "material": "Aramid" }, { "id": "First_Spear_Strandhogg_plate_carrier__ABUPAT_", "name": "First Spear Strandhogg plate carrier (ABUPAT)", "class": 4, "maxDurability": 108, "material": "Aramid" }, { "id": "ECLiPSE_RBAV_AF_plate_carrier__Ranger_Green_", "name": "ECLiPSE RBAV-AF plate carrier (Ranger Green)", "class": 4, "maxDurability": 108, "material": "Aramid" }, { "id": "Stich_Profi_Plate_Carrier_V2__Black_", "name": "Stich Profi Plate Carrier V2 (Black)", "class": 4, "maxDurability": 108, "material": "Aramid" }, { "id": "Stich_Profi_Plate_Carrier_V2__MARPAT_Woodland_", "name": "Stich Profi Plate Carrier V2 (MARPAT Woodland)", "class": 4, "maxDurability": 108, "material": "Aramid" }, { "id": "CQC_Osprey_MK4A_plate_carrier__Assault__MTP_", "name": "CQC Osprey MK4A plate carrier (Assault, MTP)", "class": 4, "maxDurability": 132, "material": "Aramid" }, { "id": "Crye_Precision_AVS_plate_carrier__Tagilla_Edition_", "name": "Crye Precision AVS plate carrier (Tagilla Edition)", "class": 6, "maxDurability": 60, "material": "Aramid" }, { "id": "5_11_Tactical_TacTec_plate_carrier__Ranger_Green_", "name": "5.11 Tactical TacTec plate carrier (Ranger Green)", "class": 5, "maxDurability": 80, "material": "Aramid" }, { "id": "5_11_Tactical_TacTec_plate_carrier__Storm_", "name": "5.11 Tactical TacTec plate carrier (Storm)", "class": 5, "maxDurability": 80, "material": "Aramid" }, { "id": "Crye_Precision_CPC_plate_carrier__Goons_Edition_", "name": "Crye Precision CPC plate carrier (Goons Edition)", "class": 5, "maxDurability": 90, "material": "Aramid" }, { "id": "Ars_Arma_CPC_MOD_1_plate_carrier__A_TACS_FG_", "name": "Ars Arma CPC MOD.1 plate carrier (A-TACS FG)", "class": 5, "maxDurability": 120, "material": "Aramid" }, { "id": "Stich_Profi_Stich_Defense_mod_2_plate_carrier__MultiCam_", "name": "Stich Profi Stich Defense mod.2 plate carrier (MultiCam)", "class": 6, "maxDurability": 130, "material": "Aramid" }, { "id": "ANA_Tactical_M2_plate_carrier__OD_Green_", "name": "ANA Tactical M2 plate carrier (OD Green)", "class": 4, "maxDurability": 96, "material": "Aramid" }, { "id": "ANA_Tactical_M2_plate_carrier__MultiCam_Alpine_", "name": "ANA Tactical M2 plate carrier (MultiCam Alpine)", "class": 4, "maxDurability": 96, "material": "Aramid" }, { "id": "Crye_Precision_AVS_plate_carrier__Ranger_Green_", "name": "Crye Precision AVS plate carrier (Ranger Green)", "class": 4, "maxDurability": 112, "material": "Aramid" }, { "id": "Crye_Precision_AVS_plate_carrier__MultiCam_", "name": "Crye Precision AVS plate carrier (MultiCam)", "class": 4, "maxDurability": 112, "material": "Aramid" }, { "id": "NPP_KlASS_Bagariy_plate_carrier__EMR_", "name": "NPP KlASS Bagariy plate carrier (EMR)", "class": 5, "maxDurability": 132, "material": "Aramid" }, { "id": "6B5_16_Zh_86_Uley_armored_rig__Khaki_", "name": "6B5-16 Zh-86 Uley armored rig (Khaki)", "class": 2, "maxDurability": 160, "material": "TitanAramid" }, { "id": "6B45_armored_rig__General_Purpose__EMR_", "name": "6B45 armored rig (General Purpose, EMR)", "class": 5, "maxDurability": 254, "material": "Aramid" }, { "id": "6B45_armored_rig__Medic__EMR_", "name": "6B45 armored rig (Medic, EMR)", "class": 5, "maxDurability": 254, "material": "Aramid" }, { "id": "6B45_armored_rig__Assault__EMR_", "name": "6B45 armored rig (Assault, EMR)", "class": 6, "maxDurability": 254, "material": "Aramid" }, { "id": "CQC_Osprey_MK4A_plate_carrier__Protection__MTP_", "name": "CQC Osprey MK4A plate carrier (Protection, MTP)", "class": 5, "maxDurability": 132, "material": "Aramid" }, { "id": "6B3TM_01_armored_rig__Khaki_", "name": "6B3TM-01 armored rig (Khaki)", "class": 2, "maxDurability": 86, "material": "Titan" }, { "id": "6B5_15_Zh_86_Uley_armored_rig__Flora_", "name": "6B5-15 Zh-86 Uley armored rig (Flora)", "class": 4, "maxDurability": 110, "material": "CeramicAramid" }]);
             const [faceData, setFaceData] = useState(FACE_SHIELD_DATA);
             const [loadingArmor, setLoadingArmor] = useState(false);
 
@@ -721,14 +744,26 @@
 
                     </div>
 
-                    <footer className="mt-12 text-center border-t border-tarkov-border pt-6 opacity-60 hover:opacity-100 transition-opacity flex flex-col gap-2">
-                        <p className="text-xs font-mono text-tarkov-text">
-                            TACTICAL DATABASE V2.4 // DEVELOPED BY <span className="text-tarkov-accent font-bold">BEKKA PRAMHEDDA AND CHANGELINGS</span>
-                        </p>
-                        <p className="text-[10px] text-gray-500 max-w-2xl mx-auto">
-                            Game content and materials are trademarks and copyrights of Battlestate Games and its licensors. All rights reserved.
-                        </p>
+                    <footer className="mt-12 text-center border-t border-tarkov-border pt-6 opacity-60 hover:opacity-100 transition-opacity flex flex-col gap-4">
+                        <button
+                            onClick={() => setIsFeedbackOpen(true)}
+                            className="text-xs font-mono font-bold text-tarkov-accent border border-tarkov-accent/50 bg-slate-900/50 hover:bg-tarkov-accent/20 px-4 py-2 mx-auto rounded transition-colors"
+                        >
+                            <span className="mr-2">★</span>COMMUNITY INTEL BOARD (FEEDBACK)
+                        </button>
+                        <div>
+                            <p className="text-xs font-mono text-tarkov-text">
+                                TACTICAL DATABASE V2.4 // DEVELOPED BY <span className="text-tarkov-accent font-bold">BEKKA PRAMHEDDA AND CHANGELINGS</span>
+                            </p>
+                            <p className="text-[10px] text-gray-500 max-w-2xl mx-auto mt-1">
+                                Game content and materials are trademarks and copyrights of Battlestate Games and its licensors. All rights reserved.
+                            </p>
+                        </div>
                     </footer>
+
+                    {isFeedbackOpen && (
+                        <FeedbackBoard onClose={() => setIsFeedbackOpen(false)} />
+                    )}
                 </div>
             );
         }
@@ -854,6 +889,238 @@
             );
         }
 
+        function FeedbackBoard({ onClose }) {
+            const [feedbacks, setFeedbacks] = useState([]);
+
+            const [feedbackType, setFeedbackType] = useState("Bug Report");
+            const [message, setMessage] = useState("");
+
+            // New state for tabs
+            const [activeTab, setActiveTab] = useState("All Intel");
+            const categories = ["All Intel", "Bug Report", "Calculation Error", "Feature Request", "General Feedback"];
+
+            useEffect(() => {
+                const feedbacksRef = db.ref('feedbacks');
+                feedbacksRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const fbList = [];
+                        for (let id in data) {
+                            fbList.push({ id, ...data[id] });
+                        }
+
+                        // Check local storage for upvotes
+                        const votedSet = new Set(JSON.parse(localStorage.getItem("tarkov_voted_intel") || "[]"));
+                        fbList.forEach(f => {
+                            f.hasVoted = votedSet.has(f.id);
+                            f.upvotes = f.upvotes || 0;
+                        });
+
+                        setFeedbacks(fbList);
+                    } else {
+                        setFeedbacks([]);
+                    }
+                }, (error) => {
+                    console.error("Firebase Read Error:", error);
+                    alert("Firebase Read Error: " + error.message + "\n\nDid you update the Realtime Database Rules to true?");
+                });
+
+                // Diagnostics: Check connection status
+                const connectedRef = db.ref(".info/connected");
+                connectedRef.on("value", (snap) => {
+                    if (snap.val() === true) {
+                        console.log("Firebase Database: Connected!");
+                    } else {
+                        console.log("Firebase Database: Disconnected.");
+                    }
+                });
+
+                return () => {
+                    feedbacksRef.off();
+                    connectedRef.off();
+                };
+            }, []);
+
+            const handleSubmit = (e) => {
+                if (e) e.preventDefault();
+                if (!message.trim()) return;
+
+                try {
+                    db.ref('feedbacks').push({
+                        type: feedbackType,
+                        message: message,
+                        upvotes: 0,
+                        date: new Date().toLocaleDateString(),
+                        timestamp: Date.now()
+                    }, (error) => {
+                        if (error) {
+                            console.error("Push Error:", error);
+                            alert("Firebase Write Error: " + error.message);
+                        }
+                    });
+                    setMessage("");
+                } catch (error) {
+                    console.error("Error submitting intel:", error);
+                    alert("Failed to connect to the Intel Network. Check console.");
+                }
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                }
+            };
+
+            const handleUpvote = (id, currentUpvotes, hasVoted) => {
+                const ref = db.ref('feedbacks/' + id + '/upvotes');
+                const votedArray = JSON.parse(localStorage.getItem("tarkov_voted_intel") || "[]");
+                const votedSet = new Set(votedArray);
+
+                ref.transaction((currentValue) => {
+                    if (hasVoted) {
+                        return (currentValue || 0) - 1;
+                    } else {
+                        return (currentValue || 0) + 1;
+                    }
+                }, (error, committed, snapshot) => {
+                    if (error) {
+                        console.error("Error updating vote:", error);
+                    } else if (committed) {
+                        if (hasVoted) {
+                            votedSet.delete(id);
+                        } else {
+                            votedSet.add(id);
+                        }
+                        localStorage.setItem("tarkov_voted_intel", JSON.stringify(Array.from(votedSet)));
+                    }
+                });
+            };
+
+            const sortedFeedbacks = [...feedbacks]
+                .filter(f => activeTab === "All Intel" || f.type === activeTab)
+                .sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0) || (b.timestamp || 0) - (a.timestamp || 0));
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+                    <div className="glass-panel w-full max-w-5xl border border-tarkov-accent/50 shadow-2xl shadow-tarkov-accent/20 flex flex-col max-h-[90vh]">
+                        <div className="bg-slate-900/80 p-4 border-b border-tarkov-accent/30 flex justify-between items-center shrink-0">
+                            <h3 className="font-tech text-tarkov-accent text-lg flex items-center gap-2">
+                                <span className="w-2 h-2 bg-tarkov-accent rounded-full animate-pulse"></span>
+                                COMMUNITY INTEL BOARD
+                            </h3>
+                            <div className="flex items-center gap-4">
+                                <button onClick={onClose} className="text-gray-400 hover:text-white font-mono text-2xl leading-none">&times;</button>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                            {/* Form Side */}
+                            <div className="w-full md:w-1/3 p-6 border-b md:border-b-0 md:border-r border-tarkov-accent/20 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-slate-900/40">
+                                <h4 className="text-xs font-mono text-gray-400 mb-4 border-b border-tarkov-border pb-1">SUBMIT NEW INTEL</h4>
+                                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-mono text-gray-400 mb-1">CATEGORY</label>
+                                        <select
+                                            className="w-full bg-slate-900/80 border border-tarkov-border text-gray-200 font-mono text-xs p-2 focus:border-tarkov-accent outline-none hover:border-gray-500 transition-colors"
+                                            value={feedbackType}
+                                            onChange={(e) => setFeedbackType(e.target.value)}
+                                        >
+                                            <option>Bug Report</option>
+                                            <option>Calculation Error</option>
+                                            <option>Feature Request</option>
+                                            <option>General Feedback</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <label className="block text-[10px] font-mono text-gray-400 mb-1">MESSAGE TRANSMISSION</label>
+                                        <textarea
+                                            className="w-full h-32 bg-slate-900/80 border border-tarkov-border text-gray-200 font-mono text-xs p-3 focus:border-tarkov-accent outline-none custom-scrollbar resize-none hover:border-gray-500 transition-colors"
+                                            placeholder="Provide intel... (Press Enter to submit, Shift+Enter for new line)"
+                                            value={message}
+                                            onChange={(e) => setMessage(e.target.value)}
+                                            onKeyDown={handleKeyDown}
+                                            required
+                                        ></textarea>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        className="w-full py-2 text-xs font-mono font-bold text-slate-900 bg-tarkov-accent hover:bg-orange-400 border border-tarkov-accent transition-colors shadow-[0_0_10px_rgba(255,153,0,0.2)] mt-2"
+                                    >
+                                        SUBMIT TO NETWORK
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Board Side */}
+                            <div className="w-full md:w-2/3 p-6 flex flex-col overflow-hidden bg-black/40">
+                                <div className="flex justify-between items-end mb-2 border-b border-tarkov-border pb-1 shrink-0">
+                                    <h4 className="text-xs font-mono text-gray-400">ACTIVE INTEL ({sortedFeedbacks.length})</h4>
+                                    <span className="text-[10px] font-mono text-gray-500">SORTED BY UPVOTES</span>
+                                </div>
+
+                                <div className="flex gap-2 mb-4 overflow-x-auto custom-scrollbar pb-2 shrink-0">
+                                    {categories.map(cat => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => setActiveTab(cat)}
+                                            className={`whitespace-nowrap px-3 py-1 text-[10px] font-mono font-bold uppercase transition-colors border ${activeTab === cat ? 'bg-tarkov-accent/20 text-tarkov-accent border-tarkov-accent/50 selection' : 'bg-slate-900/50 text-gray-500 border-tarkov-border hover:bg-slate-800 hover:text-gray-300'}`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-3">
+                                    {sortedFeedbacks.length === 0 ? (
+                                        <div className="text-center py-12 text-gray-600 font-mono text-xs italic">
+                                            No intel has been intercepted. Be the first.
+                                        </div>
+                                    ) : (
+                                        sortedFeedbacks.map(f => (
+                                            <div key={f.id} className="relative glass-panel bg-slate-800/40 border border-tarkov-border p-4 hover:border-tarkov-accent/30 transition-colors flex gap-4 group">
+                                                {/* Upvote Column */}
+                                                <div className="flex flex-col items-center shrink-0 w-8">
+                                                    <button
+                                                        onClick={() => handleUpvote(f.id, f.upvotes, f.hasVoted)}
+                                                        className={`text-xl leading-none hover:drop-shadow-[0_0_5px_rgba(255,153,0,0.8)] transition-all ${f.hasVoted ? 'text-tarkov-accent drop-shadow-[0_0_5px_rgba(255,153,0,0.8)]' : 'text-gray-600 hover:text-gray-300'}`}
+                                                    >
+                                                        ▲
+                                                    </button>
+                                                    <span className={`font-mono text-sm font-bold mt-1 ${f.upvotes > 0 ? 'text-tarkov-accent' : 'text-gray-500'}`}>
+                                                        {f.upvotes}
+                                                    </span>
+                                                </div>
+
+                                                {/* Content Column */}
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="text-[10px] uppercase font-bold text-tarkov-accent tracking-widest bg-tarkov-accent/10 px-2 py-0.5 border border-tarkov-accent/20">
+                                                            {f.type}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-600 font-mono">
+                                                            {f.date}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-300 font-mono whitespace-pre-wrap mt-2">
+                                                        {f.message}
+                                                    </p>
+                                                </div>
+
+                                                {/* Admin Actions */}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         // --- Helpers ---
         function getGradientColor(chance) {
             if (chance > 80) return "text-red-600 drop-shadow-sm";
@@ -886,4 +1153,3 @@
 </body>
 
 </html>
-
